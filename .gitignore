@@ -1,0 +1,4 @@
+.fvm/
+.dart_tool
+fixtures
+.flutter-plugins-dependencies

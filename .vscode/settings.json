@@ -1,0 +1,32 @@
+{
+  "dart.flutterSdkPath": ".fvm/versions/master",
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    ".fvm": true,
+    "**/.idea": true,
+    "**/*.iml": true,
+    ".metadata": true,
+    "build": true,
+    "pubspec.lock": true,
+    "**/.dart_tool": true,
+    ".fvmrc": true,
+    ".flutter-plugins-dependencies": true,
+  },
+  "material-icon-theme.folders.associations": {
+    "tilejson": "json",
+    "spec": "json",
+    "vector_tile": "json",
+    "references": "json",
+    "preprocessor": "scripts",
+    "layers": "queue",
+    "analysis": "test"
+  },
+  "editor.rulers": [
+    120
+  ],
+}

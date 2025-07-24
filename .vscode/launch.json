@@ -1,0 +1,30 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "example/tile-renderer-test",
+      "cwd": "example",
+      "request": "launch",
+      "program": "lib/tile-renderer-test.main.dart",
+      "type": "dart",
+      "args": [
+        "--enable-impeller",
+        "--enable-flutter-gpu",
+      ]
+    },
+    {
+      "name": "example/tile-renderer-minimal",
+      "cwd": "example",
+      "request": "launch",
+      "program": "lib/tile-renderer-minimal.main.dart",
+      "type": "dart",
+      "args": [
+        "--enable-impeller",
+        "--enable-flutter-gpu",
+      ]
+    },
+  ]
+}

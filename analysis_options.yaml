@@ -1,0 +1,13 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    curly_braces_in_flow_control_structures: ignore
+    no_leading_underscores_for_local_identifiers: ignore
+
+  exclude: 
+    - '**/*/shader_bundle_impeller.fb.shaderbundle_generated.dart'
+
+formatter:
+  page_width: 120
+  trailing_commas: preserve
