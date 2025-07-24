@@ -5,18 +5,18 @@ import '../utils/vector_json_utils.dart';
 
 import 'package:granite/spec/spec.dart';
 import 'package:equatable/equatable.dart';
-import 'package:vector_math/vector_math_64.dart';
+import 'package:vector_math/vector_math_64.dart' as vm;
 
 T? _parseJsonForKnownTypes<T>(dynamic json) {
   if (json is T) {
     return json;
   } else if ((T == List<num>) && json is List && isListWithElementType<num>(json)) {
     return json.cast<num>() as T;
-  } else if ((T == Vector2) && json is List && isListWithElementType<num>(json) && json.length == 2) {
+  } else if ((T == vm.Vector2) && json is List && isListWithElementType<num>(json) && json.length == 2) {
     return vector2FromJson(json) as T;
-  } else if ((T == Vector3) && json is List && isListWithElementType<num>(json) && json.length == 3) {
+  } else if ((T == vm.Vector3) && json is List && isListWithElementType<num>(json) && json.length == 3) {
     return vector3FromJson(json) as T;
-  } else if ((T == Vector4) && json is List && isListWithElementType<num>(json) && json.length == 4) {
+  } else if ((T == vm.Vector4) && json is List && isListWithElementType<num>(json) && json.length == 4) {
     return vector4FromJson(json) as T;
   } else if ((T == List<String>) && json is List && isListWithElementType<String>(json)) {
     return json.cast<String>() as T;

@@ -1,7 +1,10 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_gpu/gpu.dart' as gpu;
 
 /// A class that provides a [gpu.ShaderLibrary] instance.
-abstract class ShaderLibraryProvider {
+/// 
+/// Listeners will be notified if the shader library changes its shaders (e.g. hot-reload).
+abstract class ShaderLibraryProvider with ChangeNotifier {
   /// The underlying [gpu.ShaderLibrary] instance.
   gpu.ShaderLibrary get shaderLibrary;
 

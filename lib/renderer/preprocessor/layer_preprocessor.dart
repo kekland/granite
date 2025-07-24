@@ -4,7 +4,7 @@ import 'package:granite/renderer/preprocessor/gen/raw_shaders.dart';
 import 'package:granite/renderer/utils/byte_data_utils.dart';
 import 'package:granite/spec/gen/style.gen.dart';
 import 'package:granite/spec/spec.dart' as spec;
-import 'package:vector_math/vector_math_64.dart';
+import 'package:vector_math/vector_math_64.dart' as vm;
 
 class PreprocessedLayer {
   PreprocessedLayer({
@@ -60,12 +60,12 @@ Type _glslTypeToDartType(String glslType) {
     'float' => double,
     'int' => int,
     'bool' => bool,
-    'vec2' => Vector2,
-    'vec3' => Vector3,
-    'vec4' => Vector4,
-    'mat2' => Matrix2,
-    'mat3' => Matrix3,
-    'mat4' => Matrix4,
+    'vec2' => vm.Vector2,
+    'vec3' => vm.Vector3,
+    'vec4' => vm.Vector4,
+    'mat2' => vm.Matrix2,
+    'mat3' => vm.Matrix3,
+    'mat4' => vm.Matrix4,
     _ => throw ArgumentError('Unknown GLSL type: $glslType'),
   };
 }
@@ -90,11 +90,11 @@ String _writeValue(Object? value) {
     return '"$value"';
   } else if (value is num || value is bool) {
     return value.toString();
-  } else if (value is Vector2) {
+  } else if (value is vm.Vector2) {
     return 'vec2(${value.x}, ${value.y})';
-  } else if (value is Vector3) {
+  } else if (value is vm.Vector3) {
     return 'vec3(${value.x}, ${value.y}, ${value.z})';
-  } else if (value is Vector4) {
+  } else if (value is vm.Vector4) {
     return 'vec4(${value.x}, ${value.y}, ${value.z}, ${value.w})';
   } else {
     throw ArgumentError('Unsupported value type: ${value.runtimeType}');

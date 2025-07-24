@@ -7,6 +7,10 @@ import 'package:granite/spec/spec.dart' as spec;
 
 import 'precompiler/precompiler.dart';
 
+// NOTE:
+// This script will be obsolete once we can turn on online shader compilation. In the meantime, style shaders must
+// be precompiled to a shader bundle file, which is then used by the renderer.
+
 Future<void> main(List<String> args) async {
   // Args: `compile_style.dart <style_file_path> <out_directory_path>`
   // For now, those are hardcoded.
@@ -16,8 +20,8 @@ Future<void> main(List<String> args) async {
   // ];
 
   final args = [
-    'fixtures/maptiler-streets-v2-dark.json',
-    'example/assets/maptiler-streets-dark.shaderbundle',
+    'fixtures/maptiler-streets-v2.json',
+    'example/assets/maptiler-streets.shaderbundle',
   ];
 
   final timer = Stopwatch()..start();

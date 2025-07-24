@@ -1,6 +1,6 @@
 import 'dart:ui' as ui;
 import 'package:flutter_scene/scene.dart';
-import 'package:vector_math/vector_math.dart';
+import 'package:vector_math/vector_math_64.dart';
 
 /// Builds an orthographic projection matrix mapping [left..right], [bottom..top],
 /// and [zNear..zFar] into normalized device coordinates.

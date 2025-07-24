@@ -1,13 +1,13 @@
-#define prop_crossfade(a, b) mix(a, b, tile.zoom - floor(tile.zoom))
+#define prop_crossfade(a, b) mix(a, b, tile_info.zoom - floor(tile_info.zoom))
 
 #define prop_step(start_value, end_value, start_stop, end_stop) \
-  mix(start_value, end_value, step(end_stop, tile.zoom))
+  mix(start_value, end_value, step(end_stop, tile_info.zoom))
 
 #define prop_interpolate(start_value, end_value, start_stop, end_stop) \
-  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile.zoom))
+  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile_info.zoom))
 
 #define prop_interpolate_exponential(base, start_value, end_value, start_stop, end_stop) \
-  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile.zoom))
+  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile_info.zoom))
 
 float prop_interpolate_factor(
   float base,

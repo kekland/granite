@@ -2,7 +2,6 @@
 
 precision highp float;
 
-#pragma prelude: tile
 #pragma prelude: interpolation
 
 #pragma prop: declare(highp vec4 color)
@@ -12,5 +11,5 @@ out highp vec4 f_color;
 
 void main() {
   #pragma prop: resolve
-  f_color = color * opacity * tile.opacity;
+  f_color = color * opacity;
 }

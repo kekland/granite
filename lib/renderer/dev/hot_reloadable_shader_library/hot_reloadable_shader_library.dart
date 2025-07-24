@@ -4,15 +4,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_gpu/gpu.dart' as gpu;
-import 'package:granite/renderer/gpu_utils/shader_library_provider.dart';
 import 'shader_bundle_impeller.fb.shaderbundle_generated.dart' as ipsb;
+
+import '../../core/gpu/shader_library_provider.dart';
+export '../../core/gpu/shader_library_provider.dart';
 
 Map<String, String> _hotReloadSuffixes = {};
 
 /// A class that provides a hot-reloadable [gpu.ShaderLibrary] instance.
 ///
 /// See [HotReloadableShaderLibraryBindings] for more information.
-class HotReloadableShaderLibraryProvider extends ShaderLibraryProvider with ChangeNotifier {
+class HotReloadableShaderLibraryProvider extends ShaderLibraryProvider {
   HotReloadableShaderLibraryProvider(this.assetName) {
     HotReloadableShaderLibraryBindings.instance._attachProvider(assetName, _onShaderLibraryReloaded);
     _finalizer.attach(this, assetName);

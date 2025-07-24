@@ -1,15 +1,15 @@
 import '../utils/color_utils.dart';
 import '../utils/parse_css_color.dart';
 
-import 'package:vector_math/vector_math_64.dart';
+import 'package:vector_math/vector_math_64.dart' as vm;
 
 /// A type that represents a color in the style spec.
 ///
 /// It's an extension type of [Vector4] to simplify its usage in shaders.
 ///
 /// Mirror `dart:ui` class is `ui.Color`, but it can't be used due to the need to run the code in a Dart-only context.
-extension type Color._(Vector4 vec) {
-  Color({required double r, required double g, required double b, double a = 1.0}) : this._(Vector4(r, g, b, a));
+extension type Color._(vm.Vector4 vec) {
+  Color({required double r, required double g, required double b, double a = 1.0}) : this._(vm.Vector4(r, g, b, a));
 
   /// Creates a new color from a list of numbers.
   ///

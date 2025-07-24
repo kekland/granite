@@ -1,4 +1,4 @@
-import 'dart:ui' as ui;
+import 'package:vector_math/vector_math_64.dart' as vm;
 
 /// A class that represents a feature in a vector tile.
 ///
@@ -24,7 +24,7 @@ abstract class Feature {
 class PointFeature extends Feature {
   const PointFeature({required super.attributes, required this.points});
 
-  final List<ui.Offset> points;
+  final List<vm.Vector2> points;
 
   /// Returns `true` if the feature is a multi-point feature.
   bool get isMultiPoint => points.length > 1;
@@ -34,7 +34,7 @@ class PointFeature extends Feature {
 class LineString {
   const LineString({required this.points});
 
-  final List<ui.Offset> points;
+  final List<vm.Vector2> points;
 }
 
 /// A class that represents a line string feature in a vector tile.
@@ -53,7 +53,7 @@ class LineStringFeature extends Feature {
 class Ring {
   const Ring({required this.points, required this.isClockwise});
 
-  final List<ui.Offset> points;
+  final List<vm.Vector2> points;
 
   /// Whether the ring is clockwise or not.
   ///

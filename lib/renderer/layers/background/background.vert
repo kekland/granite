@@ -2,8 +2,7 @@
 
 precision highp float;
 
-#pragma prelude: tile
-#pragma prelude: frame-info
+#pragma prelude: tile-info
 #pragma prelude: interpolation
 
 in highp vec2 position;
@@ -13,5 +12,5 @@ in highp vec2 position;
 
 void main() {
   #pragma prop: resolve(...)
-  gl_Position = frame_info.camera_transform * frame_info.model_transform * project_tile_position(position);
+  gl_Position = tile_info.mvp * vec4(position, 0.0, 1.0);
 }

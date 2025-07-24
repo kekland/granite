@@ -1,12 +1,12 @@
 import 'dart:math';
-import 'dart:ui' as ui;
 
 import 'package:dart_earcut/dart_earcut.dart' as earcut;
 import 'package:granite/vector_tile/vector_tile.dart' as vt;
+import 'package:vector_math/vector_math_64.dart' as vm;
 
 class Tessellator {
   static List<int> tessellatePolygon(vt.Polygon polygon) {
-    final vertices = <ui.Offset>[];
+    final vertices = <vm.Vector2>[];
     final holeIndices = <int>[];
 
     vertices.addAll(polygon.exterior.points);
@@ -16,6 +16,6 @@ class Tessellator {
       vertices.addAll(interiorRing.points);
     }
 
-    return earcut.Earcut.triangulateFromPoints(vertices.map((v) => Point(v.dx, v.dy)), holeIndices: holeIndices);
+    return earcut.Earcut.triangulateFromPoints(vertices.map((v) => Point(v.x, v.y)), holeIndices: holeIndices);
   }
 }

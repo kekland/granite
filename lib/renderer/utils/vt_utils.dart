@@ -1,8 +1,5 @@
-import 'dart:ui' as ui;
-
-import 'package:flutter/widgets.dart';
 import 'package:granite/vector_tile/vector_tile.dart' as vt;
-import 'package:vector_math/vector_math_64.dart';
+import 'package:vector_math/vector_math_64.dart' as vm;
 
 extension PolygonExtensions on vt.Polygon {
   int get vertexCount {
@@ -15,7 +12,7 @@ extension PolygonExtensions on vt.Polygon {
     return count;
   }
 
-  Iterable<ui.Offset> get vertices sync* {
+  Iterable<vm.Vector2> get vertices sync* {
     yield* exterior.points;
 
     for (final interior in interiors) {
@@ -34,8 +31,4 @@ extension PolygonListExtensions on List<vt.Polygon> {
 
     return count;
   }
-}
-
-extension OffsetExt on Offset {
-  Vector2 get vec2 => Vector2(dx, dy);
 }

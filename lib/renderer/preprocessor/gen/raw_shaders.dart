@@ -6,41 +6,56 @@
 // dart format off
 
 class RawShaders {
+static const String texture_frag = '''
+#version 460 core
+
+uniform TextureUbo {
+  float opacity;
+} texture_ubo;
+
+uniform sampler2D u_texture;
+
+in vec2 v_texCoord;
+
+out vec4 f_color;
+
+void main() {
+  vec4 color = texture(u_texture, v_texCoord) * texture_ubo.opacity;
+  if (color.a < 0.01) discard;
+
+  f_color = color;
+}
+''';
+
+static const String texture_vert = '''
+#version 460 core
+
+in vec2 position;
+in vec2 texCoord;
+
+out vec2 v_texCoord;
+
+void main() {
+  gl_Position = vec4(position, 0.0, 1.0);
+  v_texCoord = texCoord;
+}
+''';
+
 static const String background_frag = '''
 #version 460 core
 
 precision highp float;
 
-uniform Tile {
-  highp mat4 local_to_gl;
-  highp float size;
-  highp float extent;
-  highp float opacity;
-  highp float zoom;
-} tile;
-
-vec4 project_tile_position(vec2 position) {
-  return vec4(position.x * tile.size, position.y * tile.size, 0.0, 1.0);
-}
-
-vec4 project_tile_position(vec3 position) {
-  return vec4(position.x * tile.size, position.y * tile.size, position.z * tile.size, 1.0);
-}
-
-float project_pixel_length(float len) {
-  return len * tile.size / tile.extent;
-}
-
-#define prop_crossfade(a, b) mix(a, b, tile.zoom - floor(tile.zoom))
+#define prop_crossfade(a, b) mix(a, b, tile_info.zoom - floor(tile_info.zoom))
 
 #define prop_step(start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, step(end_stop, tile.zoom))
+  mix(start_value, end_value, step(end_stop, tile_info.zoom))
 
 #define prop_interpolate(start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile.zoom))
+  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile_info.zoom))
 
 #define prop_interpolate_exponential(base, start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile.zoom))
+  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile_info.zoom))
 
 float prop_interpolate_factor(
   float base,
@@ -64,7 +79,7 @@ out highp vec4 f_color;
 
 void main() {
   #pragma prop: resolve
-  f_color = color * opacity * tile.opacity;
+  f_color = color * opacity;
 }
 
 ''';
@@ -74,42 +89,33 @@ static const String background_vert = '''
 
 precision highp float;
 
-uniform Tile {
-  highp mat4 local_to_gl;
-  highp float size;
-  highp float extent;
-  highp float opacity;
-  highp float zoom;
-} tile;
-
-vec4 project_tile_position(vec2 position) {
-  return vec4(position.x * tile.size, position.y * tile.size, 0.0, 1.0);
-}
-
-vec4 project_tile_position(vec3 position) {
-  return vec4(position.x * tile.size, position.y * tile.size, position.z * tile.size, 1.0);
-}
-
-float project_pixel_length(float len) {
-  return len * tile.size / tile.extent;
-}
-
-uniform FrameInfo {
-  mat4 model_transform;
+uniform TileInfo {
+  // transforms and camera
+  mat4 mvp;
   mat4 camera_transform;
+  mat4 model_transform;
   vec3 camera_position;
-} frame_info;
 
-#define prop_crossfade(a, b) mix(a, b, tile.zoom - floor(tile.zoom))
+  // light
+  vec3 light_direction;
+  float light_intensity;
+  vec4 light_color;
+
+  // other data
+  float units_per_pixel;
+  float zoom;
+} tile_info;
+
+#define prop_crossfade(a, b) mix(a, b, tile_info.zoom - floor(tile_info.zoom))
 
 #define prop_step(start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, step(end_stop, tile.zoom))
+  mix(start_value, end_value, step(end_stop, tile_info.zoom))
 
 #define prop_interpolate(start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile.zoom))
+  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile_info.zoom))
 
 #define prop_interpolate_exponential(base, start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile.zoom))
+  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile_info.zoom))
 
 float prop_interpolate_factor(
   float base,
@@ -133,7 +139,7 @@ in highp vec2 position;
 
 void main() {
   #pragma prop: resolve(...)
-  gl_Position = frame_info.camera_transform * frame_info.model_transform * project_tile_position(position);
+  gl_Position = tile_info.mvp * vec4(position, 0.0, 1.0);
 }
 
 ''';
@@ -143,36 +149,16 @@ static const String fill_frag = '''
 
 precision highp float;
 
-uniform Tile {
-  highp mat4 local_to_gl;
-  highp float size;
-  highp float extent;
-  highp float opacity;
-  highp float zoom;
-} tile;
-
-vec4 project_tile_position(vec2 position) {
-  return vec4(position.x * tile.size, position.y * tile.size, 0.0, 1.0);
-}
-
-vec4 project_tile_position(vec3 position) {
-  return vec4(position.x * tile.size, position.y * tile.size, position.z * tile.size, 1.0);
-}
-
-float project_pixel_length(float len) {
-  return len * tile.size / tile.extent;
-}
-
-#define prop_crossfade(a, b) mix(a, b, tile.zoom - floor(tile.zoom))
+#define prop_crossfade(a, b) mix(a, b, tile_info.zoom - floor(tile_info.zoom))
 
 #define prop_step(start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, step(end_stop, tile.zoom))
+  mix(start_value, end_value, step(end_stop, tile_info.zoom))
 
 #define prop_interpolate(start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile.zoom))
+  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile_info.zoom))
 
 #define prop_interpolate_exponential(base, start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile.zoom))
+  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile_info.zoom))
 
 float prop_interpolate_factor(
   float base,
@@ -198,7 +184,7 @@ out highp vec4 f_color;
 
 void main() {
   #pragma prop: resolve(...)
-  f_color = color * (opacity * tile.opacity);
+  f_color = color * opacity;
 }
 
 ''';
@@ -208,42 +194,33 @@ static const String fill_vert = '''
 
 precision highp float;
 
-uniform Tile {
-  highp mat4 local_to_gl;
-  highp float size;
-  highp float extent;
-  highp float opacity;
-  highp float zoom;
-} tile;
-
-vec4 project_tile_position(vec2 position) {
-  return vec4(position.x * tile.size, position.y * tile.size, 0.0, 1.0);
-}
-
-vec4 project_tile_position(vec3 position) {
-  return vec4(position.x * tile.size, position.y * tile.size, position.z * tile.size, 1.0);
-}
-
-float project_pixel_length(float len) {
-  return len * tile.size / tile.extent;
-}
-
-uniform FrameInfo {
-  mat4 model_transform;
+uniform TileInfo {
+  // transforms and camera
+  mat4 mvp;
   mat4 camera_transform;
+  mat4 model_transform;
   vec3 camera_position;
-} frame_info;
 
-#define prop_crossfade(a, b) mix(a, b, tile.zoom - floor(tile.zoom))
+  // light
+  vec3 light_direction;
+  float light_intensity;
+  vec4 light_color;
+
+  // other data
+  float units_per_pixel;
+  float zoom;
+} tile_info;
+
+#define prop_crossfade(a, b) mix(a, b, tile_info.zoom - floor(tile_info.zoom))
 
 #define prop_step(start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, step(end_stop, tile.zoom))
+  mix(start_value, end_value, step(end_stop, tile_info.zoom))
 
 #define prop_interpolate(start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile.zoom))
+  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile_info.zoom))
 
 #define prop_interpolate_exponential(base, start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile.zoom))
+  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile_info.zoom))
 
 float prop_interpolate_factor(
   float base,
@@ -269,7 +246,8 @@ in highp vec2 position;
 
 void main() {
   #pragma prop: resolve
-  gl_Position = frame_info.camera_transform * frame_info.model_transform * project_tile_position(position + translate);
+  vec2 translated = position + translate;
+  gl_Position = tile_info.mvp * vec4(translated, 0.0, 1.0);
 }
 
 ''';
@@ -279,16 +257,33 @@ static const String fill_extrusion_frag = '''
 
 precision highp float;
 
-#define prop_crossfade(a, b) mix(a, b, tile.zoom - floor(tile.zoom))
+uniform TileInfo {
+  // transforms and camera
+  mat4 mvp;
+  mat4 camera_transform;
+  mat4 model_transform;
+  vec3 camera_position;
+
+  // light
+  vec3 light_direction;
+  float light_intensity;
+  vec4 light_color;
+
+  // other data
+  float units_per_pixel;
+  float zoom;
+} tile_info;
+
+#define prop_crossfade(a, b) mix(a, b, tile_info.zoom - floor(tile_info.zoom))
 
 #define prop_step(start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, step(end_stop, tile.zoom))
+  mix(start_value, end_value, step(end_stop, tile_info.zoom))
 
 #define prop_interpolate(start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile.zoom))
+  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile_info.zoom))
 
 #define prop_interpolate_exponential(base, start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile.zoom))
+  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile_info.zoom))
 
 float prop_interpolate_factor(
   float base,
@@ -305,19 +300,37 @@ float prop_interpolate_factor(
 }
 
 
-#pragma prop: declare(highp float opacity)
 #pragma prop: declare(highp vec4 color)
 #pragma prop: declare(highp vec2 translate)
 #pragma prop: declare(highp float height)
 #pragma prop: declare(highp float base)
 
-in float temp_height;
+in vec3 v_position;
 in vec3 v_normal;
+
 out highp vec4 f_color;
 
 void main() {
   #pragma prop: resolve(...)
-  f_color = vec4(v_normal * 0.5 + 0.5, 1.0);
+
+  // Lights
+  vec3 light_color = tile_info.light_color.rgb;
+  float light_intensity = tile_info.light_intensity;
+  
+  // Ambient occlussion based on the distance from ground
+  float ao_intensity = clamp((24.0 - v_position.z) / 24.0, 0.0, 1.0) * 0.125;
+
+  // No AO on the floors/roofs
+  ao_intensity *= 1.0 - abs(v_normal.z);
+  vec3 ao = vec3(ao_intensity);
+
+  float diffuse_amount = max(dot(v_normal, tile_info.light_direction), 0.0);
+  vec3 ambient = light_color * light_intensity * 0.5;
+  vec3 diffuse = light_color * light_intensity * diffuse_amount;
+  vec4 light = vec4(ambient + diffuse - ao, 1.0);
+
+  vec4 result_color = color * light;
+  f_color = result_color;
 }
 
 ''';
@@ -327,42 +340,33 @@ static const String fill_extrusion_vert = '''
 
 precision highp float;
 
-uniform Tile {
-  highp mat4 local_to_gl;
-  highp float size;
-  highp float extent;
-  highp float opacity;
-  highp float zoom;
-} tile;
-
-vec4 project_tile_position(vec2 position) {
-  return vec4(position.x * tile.size, position.y * tile.size, 0.0, 1.0);
-}
-
-vec4 project_tile_position(vec3 position) {
-  return vec4(position.x * tile.size, position.y * tile.size, position.z * tile.size, 1.0);
-}
-
-float project_pixel_length(float len) {
-  return len * tile.size / tile.extent;
-}
-
-uniform FrameInfo {
-  mat4 model_transform;
+uniform TileInfo {
+  // transforms and camera
+  mat4 mvp;
   mat4 camera_transform;
+  mat4 model_transform;
   vec3 camera_position;
-} frame_info;
 
-#define prop_crossfade(a, b) mix(a, b, tile.zoom - floor(tile.zoom))
+  // light
+  vec3 light_direction;
+  float light_intensity;
+  vec4 light_color;
+
+  // other data
+  float units_per_pixel;
+  float zoom;
+} tile_info;
+
+#define prop_crossfade(a, b) mix(a, b, tile_info.zoom - floor(tile_info.zoom))
 
 #define prop_step(start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, step(end_stop, tile.zoom))
+  mix(start_value, end_value, step(end_stop, tile_info.zoom))
 
 #define prop_interpolate(start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile.zoom))
+  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile_info.zoom))
 
 #define prop_interpolate_exponential(base, start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile.zoom))
+  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile_info.zoom))
 
 float prop_interpolate_factor(
   float base,
@@ -382,24 +386,22 @@ float prop_interpolate_factor(
 in highp vec3 position;
 in highp vec3 normal;
 
-#pragma prop: declare(highp float opacity)
 #pragma prop: declare(highp vec4 color)
 #pragma prop: declare(highp vec2 translate)
 #pragma prop: declare(highp float height)
 #pragma prop: declare(highp float base)
 
-out float temp_height;
+out vec3 v_position;
 out vec3 v_normal;
 
 void main() {
   #pragma prop: resolve
-  vec2 translatedPos = position.xy + translate;
-  vec3 resolvedPos = vec3(translatedPos, base) + vec3(0.0, 0.0, position.z * height);
+  vec2 translated_pos = position.xy + translate;
+  vec3 resolved_pos = vec3(translated_pos.xy, base) + vec3(0.0, 0.0, position.z * height);
 
-  temp_height = position.z;
+  v_position = resolved_pos;
   v_normal = normal;
-
-  gl_Position = frame_info.camera_transform * frame_info.model_transform * project_tile_position(resolvedPos);
+  gl_Position = tile_info.mvp * vec4(resolved_pos, 1.0);
 }
 
 ''';
@@ -407,16 +409,16 @@ void main() {
 static const String line_frag = '''
 #version 460 core
 
-#define prop_crossfade(a, b) mix(a, b, tile.zoom - floor(tile.zoom))
+#define prop_crossfade(a, b) mix(a, b, tile_info.zoom - floor(tile_info.zoom))
 
 #define prop_step(start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, step(end_stop, tile.zoom))
+  mix(start_value, end_value, step(end_stop, tile_info.zoom))
 
 #define prop_interpolate(start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile.zoom))
+  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile_info.zoom))
 
 #define prop_interpolate_exponential(base, start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile.zoom))
+  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile_info.zoom))
 
 float prop_interpolate_factor(
   float base,
@@ -432,26 +434,6 @@ float prop_interpolate_factor(
   else return (pow(base, progress) - 1.0) / (pow(base, difference) - 1.0);
 }
 
-uniform Tile {
-  highp mat4 local_to_gl;
-  highp float size;
-  highp float extent;
-  highp float opacity;
-  highp float zoom;
-} tile;
-
-vec4 project_tile_position(vec2 position) {
-  return vec4(position.x * tile.size, position.y * tile.size, 0.0, 1.0);
-}
-
-vec4 project_tile_position(vec3 position) {
-  return vec4(position.x * tile.size, position.y * tile.size, position.z * tile.size, 1.0);
-}
-
-float project_pixel_length(float len) {
-  return len * tile.size / tile.extent;
-}
-
 
 #pragma prop: declare(highp vec4 color)
 #pragma prop: declare(float opacity)
@@ -460,8 +442,8 @@ float project_pixel_length(float len) {
 out highp vec4 f_color;
 
 void main() {
-  #pragma prop: resolve(...)
-  f_color = color * (opacity * tile.opacity);
+  #pragma prop: resolve
+  f_color = color * opacity;
 }
 
 ''';
@@ -469,42 +451,33 @@ void main() {
 static const String line_vert = '''
 #version 460 core
 
-uniform Tile {
-  highp mat4 local_to_gl;
-  highp float size;
-  highp float extent;
-  highp float opacity;
-  highp float zoom;
-} tile;
-
-vec4 project_tile_position(vec2 position) {
-  return vec4(position.x * tile.size, position.y * tile.size, 0.0, 1.0);
-}
-
-vec4 project_tile_position(vec3 position) {
-  return vec4(position.x * tile.size, position.y * tile.size, position.z * tile.size, 1.0);
-}
-
-float project_pixel_length(float len) {
-  return len * tile.size / tile.extent;
-}
-
-uniform FrameInfo {
-  mat4 model_transform;
+uniform TileInfo {
+  // transforms and camera
+  mat4 mvp;
   mat4 camera_transform;
+  mat4 model_transform;
   vec3 camera_position;
-} frame_info;
 
-#define prop_crossfade(a, b) mix(a, b, tile.zoom - floor(tile.zoom))
+  // light
+  vec3 light_direction;
+  float light_intensity;
+  vec4 light_color;
+
+  // other data
+  float units_per_pixel;
+  float zoom;
+} tile_info;
+
+#define prop_crossfade(a, b) mix(a, b, tile_info.zoom - floor(tile_info.zoom))
 
 #define prop_step(start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, step(end_stop, tile.zoom))
+  mix(start_value, end_value, step(end_stop, tile_info.zoom))
 
 #define prop_interpolate(start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile.zoom))
+  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile_info.zoom))
 
 #define prop_interpolate_exponential(base, start_value, end_value, start_stop, end_stop) \\
-  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile.zoom))
+  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile_info.zoom))
 
 float prop_interpolate_factor(
   float base,
@@ -532,9 +505,11 @@ void main() {
   #pragma prop: resolve
 
   // Width is defined in terms of screen pixels, so we need to convert it.
-  float local_width = width * (tile.extent / tile.size);
+  float local_width = width * tile_info.units_per_pixel;
   vec2 offset = normal * local_width * 0.5;
-  gl_Position = frame_info.camera_transform * frame_info.model_transform * project_tile_position(position + offset);
+  vec2 resolved_pos = position + offset;
+
+  gl_Position = tile_info.mvp * vec4(resolved_pos, 0.0, 1.0);
 }
 
 ''';

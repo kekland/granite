@@ -1,21 +1,20 @@
 // ignore_for_file: camel_case_types, non_constant_identifier_names
 
-import 'dart:developer';
 import 'dart:typed_data';
 
-import 'package:vector_math/vector_math_64.dart';
+import 'package:vector_math/vector_math_64.dart' as vm;
 
 typedef internal_ByteDataSetter = int Function(ByteData data, int offset, dynamic value);
 internal_ByteDataSetter internal_resolveByteDataSetter(Type type) {
   return switch (type) {
     const (double) => internal_setFloat,
     const (int) => internal_setInt,
-    const (Vector2) => internal_setVec2,
-    const (Vector3) => internal_setVec3,
-    const (Vector4) => internal_setVec4,
-    const (Matrix2) => internal_setMat2,
-    const (Matrix3) => internal_setMat3,
-    const (Matrix4) => internal_setMat4,
+    const (vm.Vector2) => internal_setVec2,
+    const (vm.Vector3) => internal_setVec3,
+    const (vm.Vector4) => internal_setVec4,
+    const (vm.Matrix2) => internal_setMat2,
+    const (vm.Matrix3) => internal_setMat3,
+    const (vm.Matrix4) => internal_setMat4,
     const (ByteData) => internal_setByteData,
     _ => throw ArgumentError('Unsupported type for ByteData setter: $type'),
   };
@@ -99,11 +98,11 @@ int internal_setByteData(ByteData data, int offset, dynamic b) {
 extension ByteDataUtils on ByteData {
   int setFloat(int offset, double v) => internal_setFloat(this, offset, v);
   int setInt(int offset, int v) => internal_setInt(this, offset, v);
-  int setVec2(int offset, Vector2 v) => internal_setVec2(this, offset, v);
-  int setVec3(int offset, Vector3 v) => internal_setVec3(this, offset, v);
-  int setVec4(int offset, Vector4 v) => internal_setVec4(this, offset, v);
-  int setMat2(int offset, Matrix2 m) => internal_setMat2(this, offset, m);
-  int setMat3(int offset, Matrix3 m) => internal_setMat3(this, offset, m);
-  int setMat4(int offset, Matrix4 m) => internal_setMat4(this, offset, m);
+  int setVec2(int offset, vm.Vector2 v) => internal_setVec2(this, offset, v);
+  int setVec3(int offset, vm.Vector3 v) => internal_setVec3(this, offset, v);
+  int setVec4(int offset, vm.Vector4 v) => internal_setVec4(this, offset, v);
+  int setMat2(int offset, vm.Matrix2 m) => internal_setMat2(this, offset, m);
+  int setMat3(int offset, vm.Matrix3 m) => internal_setMat3(this, offset, m);
+  int setMat4(int offset, vm.Matrix4 m) => internal_setMat4(this, offset, m);
   int setByteData(int offset, ByteData b) => internal_setByteData(this, offset, b);
 }

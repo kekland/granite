@@ -19,7 +19,6 @@ import 'package:flat_buffers/flat_buffers.dart';
 import 'shader_bundle/shader_bundle_impeller.fb.shaderbundle_generated.dart' as ipsb;
 
 import 'package:flutter_gpu_shaders/environment.dart';
-import 'package:granite/renderer/preprocessor/layer_preprocessor.dart';
 import 'package:granite/renderer/preprocessor/preprocessor.dart';
 import 'package:granite/spec/spec.dart' as spec;
 import 'shader_bundle_utils.dart';
@@ -47,8 +46,15 @@ Future<void> precompileStyle({
       )
       .wait;
   print('compiled ${bundles.length} layers');
+  print('compiling generic shaders');
+  final genericBundle = await _compileGenericShaders(
+    tempDir: tempDir,
+    genericShaders: preprocessedStyle.genericShaders,
+    hotReloadSuffix: hotReloadSuffix,
+  );
+  print('compiled generic shaders');
 
-  final (zippedBundleBytes, zippedBundle) = _zipShaderBundles(bundles);
+  final (zippedBundleBytes, zippedBundle) = _zipShaderBundles([...bundles, genericBundle]);
   await outputFile.writeAsBytes(zippedBundleBytes);
 }
 
@@ -74,6 +80,28 @@ Future<ipsb.ShaderBundle> _compileLayer({
   final slOutFile = File('${tempDir.path}/${layer.id}.shaderbundle');
   final shaderbundle = await _executeImpellerC(shaderBundleJson: shaderBundleJson, slOutFile: slOutFile);
 
+  return shaderbundle;
+}
+
+Future<ipsb.ShaderBundle> _compileGenericShaders({
+  required Directory tempDir,
+  required Map<String, String> genericShaders,
+  String? hotReloadSuffix,
+}) async {
+  final shaderBundleJson = {};
+  final suffix = hotReloadSuffix != null ? '#$hotReloadSuffix' : '';
+
+  for (final entry in genericShaders.entries) {
+    final name = '${entry.key}$suffix';
+    final code = entry.value;
+    final type = entry.key.split('-').last;
+
+    final file = await File('${tempDir.path}/$name.$type').writeAsString(code);
+    shaderBundleJson[name] = {'type': type == 'vert' ? 'vertex' : 'fragment', 'file': file.path};
+  }
+
+  final slOutFile = File('${tempDir.path}/generic_shaders.shaderbundle');
+  final shaderbundle = await _executeImpellerC(shaderBundleJson: shaderBundleJson, slOutFile: slOutFile);
   return shaderbundle;
 }
 

@@ -16,6 +16,17 @@
       ]
     },
     {
+      "name": "example/tile-renderer-map-camera",
+      "cwd": "example",
+      "request": "launch",
+      "program": "lib/tile-renderer-map-camera.main.dart",
+      "type": "dart",
+      "args": [
+        "--enable-impeller",
+        "--enable-flutter-gpu",
+      ]
+    },
+    {
       "name": "example/tile-renderer-minimal",
       "cwd": "example",
       "request": "launch",

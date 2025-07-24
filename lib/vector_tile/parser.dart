@@ -1,5 +1,4 @@
-import 'dart:ui' as ui;
-
+import 'package:vector_math/vector_math_64.dart' as vm;
 import 'gen/vector_tile.pb.dart' as proto;
 import 'vector_tile.dart' as vt;
 
@@ -72,8 +71,8 @@ int _parameterInteger(int v) => ((v >> 1) ^ (-(v & 1)));
 ///
 /// [callback] is called for each command in the geometry. The [type] parameter is the command type, and [point] is the
 /// current cursor position.
-void _withGeometry(List<int> geometry, void Function(int type, ui.Offset point) callback) {
-  var cursor = ui.Offset.zero;
+void _withGeometry(List<int> geometry, void Function(int type, vm.Vector2 point) callback) {
+  var cursor = vm.Vector2.zero();
 
   var i = 0;
   while (i < geometry.length) {
@@ -85,14 +84,14 @@ void _withGeometry(List<int> geometry, void Function(int type, ui.Offset point) 
     i += 1;
     for (var j = 0; j < count; j++) {
       if (id == _commandMoveTo) {
-        cursor = cursor.translate(
+        cursor = cursor + vm.Vector2(
           _parameterInteger(geometry[i]).toDouble(),
           _parameterInteger(geometry[i + 1]).toDouble(),
         );
 
         i += 2;
       } else if (id == _commandLineTo) {
-        cursor = cursor.translate(
+        cursor = cursor + vm.Vector2(
           _parameterInteger(geometry[i]).toDouble(),
           _parameterInteger(geometry[i + 1]).toDouble(),
         );
@@ -113,7 +112,7 @@ void _withGeometry(List<int> geometry, void Function(int type, ui.Offset point) 
 vt.PointFeature decodePointFeature(proto.Tile_Feature feature, Map<String, Object> attributes) {
   assert(feature.type == proto.Tile_GeomType.POINT);
 
-  final points = <ui.Offset>[];
+  final points = <vm.Vector2>[];
 
   // Each move-to command is a single point.
   _withGeometry(feature.geometry, (type, point) {
@@ -146,7 +145,7 @@ vt.LineStringFeature decodeLineStringFeature(proto.Tile_Feature feature, Map<Str
 }
 
 /// Calculates the area of a polygon using the shoelace formula.
-double _shoelaceFormula(List<ui.Offset> points) {
+double _shoelaceFormula(List<vm.Vector2> points) {
   var area = 0.0;
 
   final length = points.length;
@@ -154,7 +153,7 @@ double _shoelaceFormula(List<ui.Offset> points) {
     final previousI = i == 0 ? length - 1 : i - 1;
     final nextI = i == length - 1 ? 0 : i + 1;
 
-    area += points[i].dy * (points[previousI].dx - points[nextI].dx);
+    area += points[i].y * (points[previousI].x - points[nextI].x);
   }
 
   return area.toDouble() / 2;
@@ -166,7 +165,7 @@ vt.PolygonFeature parsePolygonFeature(proto.Tile_Feature feature, Map<String, Ob
 
   final polygons = <vt.Polygon>[];
 
-  final pointsBuffer = <ui.Offset>[];
+  final pointsBuffer = <vm.Vector2>[];
   vt.Ring? exterior;
   final interiors = <vt.Ring>[];
 
