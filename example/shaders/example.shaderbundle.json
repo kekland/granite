@@ -1,0 +1,14 @@
+{
+  "test-fragment": {
+    "type": "fragment",
+    "file": "shaders/test_fragment.frag"
+  },
+  "test-vertex": {
+    "type": "vertex",
+    "file": "shaders/test_vertex.vert"
+  },
+  "shadow-pass-fragment": {
+    "type": "fragment",
+    "file": "shaders/shadow_pass_fragment.frag"
+  }
+}

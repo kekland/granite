@@ -27,10 +27,10 @@
       ]
     },
     {
-      "name": "example/tile-renderer-minimal",
+      "name": "example/shadow-map-playground",
       "cwd": "example",
       "request": "launch",
-      "program": "lib/tile-renderer-minimal.main.dart",
+      "program": "lib/shadow-map-playground.main.dart",
       "type": "dart",
       "args": [
         "--enable-impeller",

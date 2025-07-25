@@ -21,6 +21,9 @@ dependencies:
   vector_math: ^2.2.0
   latlong2: ^0.9.1
 
+  native_assets_cli: ^0.13.0
+  flutter_gpu_shaders: ^0.3.0
+
 
 dev_dependencies:
   flutter_lints: ^6.0.0
@@ -30,3 +33,4 @@ flutter:
 
   assets:
     - assets/
+    - build/shaderbundles/

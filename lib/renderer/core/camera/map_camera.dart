@@ -45,13 +45,14 @@ class MapCamera extends scene.Camera {
     final furthestDistance = math.cos(math.pi / 2 - pitchRad) * topHalfSurfaceDistance + cameraToCenterDist;
     final farZ = furthestDistance * 1.01;
 
-    final proj = vm.makePerspectiveMatrix(fovRad, dimensions.aspectRatio, 1.0, farZ);
+    final proj = _matrix4Perspective(fovRad, dimensions.aspectRatio, 1.0, farZ);
     final view = vm.Matrix4.identity()
-      ..scaleByDouble(1.0, -1.0, 1.0, 1.0)
+      ..scaleByDouble(1.0, -1.0, -1.0, 1.0)
       ..translateByDouble(0.0, 0.0, -cameraToCenterDist, 1.0)
       ..rotateX(pitchRad)
       ..rotateZ(bearingRad)
       ..translateByDouble(-x, -y, 0.0, 1.0);
+      
 
     return proj * view;
   }
@@ -61,4 +62,33 @@ class MapCamera extends scene.Camera {
     // Unused.
     return vm.Vector3(0.0, 0.0, 0.0);
   }
+}
+
+vm.Matrix4 _matrix4Perspective(
+  double fovRadiansY,
+  double aspectRatio,
+  double zNear,
+  double zFar,
+) {
+  double height = math.tan(fovRadiansY * 0.5);
+  double width = height * aspectRatio;
+
+  return vm.Matrix4(
+    1.0 / width,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0 / height,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    zFar / (zFar - zNear),
+    1.0,
+    0.0,
+    0.0,
+    -(zFar * zNear) / (zFar - zNear),
+    0.0,
+  );
 }

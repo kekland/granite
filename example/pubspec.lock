@@ -92,7 +92,7 @@ packages:
     source: sdk
     version: "0.0.0"
   flutter_gpu_shaders:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: flutter_gpu_shaders
       sha256: "98ff2396cd4543883bd4b693a782f9fcbda27e9bf5b3b92475332d36be3bfec6"
@@ -193,7 +193,7 @@ packages:
     source: hosted
     version: "1.16.0"
   native_assets_cli:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: native_assets_cli
       sha256: "0907c5b85a21ae08dcdd0d2b75061cc614939911c2cab5ac903f35a9fbb2a50b"

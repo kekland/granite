@@ -62,17 +62,17 @@ class _TileRendererTestState extends State<TileRendererMapCameraTest> with Ticke
   late final _acB = AnimationController(vsync: this, duration: const Duration(milliseconds: 100));
   late final _acP = AnimationController(vsync: this, duration: const Duration(milliseconds: 100));
 
-  late final _latT = Tween<double>(begin: 40.7128, end: 40.7128);
-  late final _lonT = Tween<double>(begin: -74.0060, end: -74.0060);
-  late final _zT = Tween<double>(begin: 13.0, end: 13.0);
-  late final _bT = Tween<double>(begin: 0.0, end: 0.0);
-  late final _pT = Tween<double>(begin: 0.0, end: 0.0);
-
-  // late final _latT = Tween<double>(begin: 0, end: 0);
-  // late final _lonT = Tween<double>(begin: 0, end: 0);
-  // late final _zT = Tween<double>(begin: 0.0, end: 0.0);
+  // late final _latT = Tween<double>(begin: 40.7128, end: 40.7128);
+  // late final _lonT = Tween<double>(begin: -74.0060, end: -74.0060);
+  // late final _zT = Tween<double>(begin: 13.0, end: 13.0);
   // late final _bT = Tween<double>(begin: 0.0, end: 0.0);
   // late final _pT = Tween<double>(begin: 0.0, end: 0.0);
+
+  late final _latT = Tween<double>(begin: 0, end: 0);
+  late final _lonT = Tween<double>(begin: 0, end: 0);
+  late final _zT = Tween<double>(begin: 0.0, end: 0.0);
+  late final _bT = Tween<double>(begin: 0.0, end: 0.0);
+  late final _pT = Tween<double>(begin: 0.0, end: 0.0);
 
   double get lat => _latT.evaluate(_acLat);
   double get lon => _lonT.evaluate(_acLon);
@@ -102,9 +102,9 @@ class _TileRendererTestState extends State<TileRendererMapCameraTest> with Ticke
   void _load() {
     final focusX = (lon + 180) / 360;
     final focusY = (1 - log(tan(lat * pi / 180) + 1 / cos(lat * pi / 180)) / pi) / 2;
-    const range = 0;
+    const range = 1;
 
-    for (var z = 14; z <= 14; z++) {
+    for (var z = 0; z <= 0; z++) {
       final xMax = pow(2, z).toInt() - 1;
       final yMax = pow(2, z).toInt() - 1;
       final x = (xMax * focusX).floor();
@@ -156,7 +156,7 @@ class _TileRendererTestState extends State<TileRendererMapCameraTest> with Ticke
       autofocus: true,
       onKeyEvent: (_, e) {
         if (e is KeyDownEvent || e is KeyRepeatEvent) {
-          const double stepPx = 32.0; // fixed on‑screen pan
+          const double stepPx = 128.0; // fixed on‑screen pan
           final double zf = pow(2, z).toDouble();
           final double worldSize = RendererNode.kTileSize * zf; // world‑pixels across
           final double dNorm = stepPx / worldSize; // normalized Mercator step
