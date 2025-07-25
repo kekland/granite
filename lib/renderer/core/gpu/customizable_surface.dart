@@ -4,7 +4,7 @@ import 'package:flutter_gpu/gpu.dart' as gpu;
 import 'package:flutter_scene/scene.dart' as scene;
 
 class CustomizableSurface extends scene.Surface {
-  final int _maxFramesInFlight = 2;
+  final int _maxFramesInFlight = 1;
   final List<gpu.RenderTarget> _renderTargets = [];
   int _cursor = 0;
   Size _previousSize = const Size(0, 0);
@@ -54,6 +54,8 @@ class CustomizableSurface extends scene.Surface {
         colorAttachment,
         depthStencilAttachment: gpu.DepthStencilAttachment(
           texture: depthTexture,
+          depthLoadAction: gpu.LoadAction.clear,
+          depthStoreAction: gpu.StoreAction.store,
           depthClearValue: 1.0,
         ),
       );

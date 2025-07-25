@@ -75,6 +75,8 @@ float prop_interpolate_factor(
 #pragma prop: declare(highp vec4 color)
 #pragma prop: declare(highp float opacity)
 
+in vec3 v_world_position;
+
 out highp vec4 f_color;
 
 void main() {
@@ -89,7 +91,7 @@ static const String background_vert = '''
 
 precision highp float;
 
-uniform TileInfo {
+layout (std140) uniform TileInfo {
   // transforms and camera
   mat4 mvp;
   mat4 camera_transform;
@@ -137,8 +139,12 @@ in highp vec2 position;
 #pragma prop: declare(highp vec4 color)
 #pragma prop: declare(highp float opacity)
 
+out vec3 v_world_position;
+
 void main() {
   #pragma prop: resolve(...)
+  vec4 world_position = tile_info.model_transform * vec4(position, 0.0, 1.0);
+  v_world_position = world_position.xyz;
   gl_Position = tile_info.mvp * vec4(position, 0.0, 1.0);
 }
 
@@ -180,10 +186,12 @@ float prop_interpolate_factor(
 #pragma prop: declare(highp vec4 color)
 #pragma prop: declare(highp vec2 translate)
 
+in vec3 v_world_position;
+
 out highp vec4 f_color;
 
 void main() {
-  #pragma prop: resolve(...)
+  #pragma prop: resolve
   f_color = color * opacity;
 }
 
@@ -194,7 +202,7 @@ static const String fill_vert = '''
 
 precision highp float;
 
-uniform TileInfo {
+layout (std140) uniform TileInfo {
   // transforms and camera
   mat4 mvp;
   mat4 camera_transform;
@@ -244,9 +252,14 @@ in highp vec2 position;
 #pragma prop: declare(highp vec4 color)
 #pragma prop: declare(highp vec2 translate)
 
+out vec3 v_world_position;
+
 void main() {
   #pragma prop: resolve
   vec2 translated = position + translate;
+  vec4 world_position = tile_info.model_transform * vec4(translated, 0.0, 1.0);
+
+  v_world_position = world_position.xyz;
   gl_Position = tile_info.mvp * vec4(translated, 0.0, 1.0);
 }
 
@@ -257,7 +270,7 @@ static const String fill_extrusion_frag = '''
 
 precision highp float;
 
-uniform TileInfo {
+layout (std140) uniform TileInfo {
   // transforms and camera
   mat4 mvp;
   mat4 camera_transform;
@@ -316,7 +329,7 @@ void main() {
   // Lights
   vec3 light_color = tile_info.light_color.rgb;
   float light_intensity = tile_info.light_intensity;
-  
+
   // Ambient occlussion based on the distance from ground
   float ao_intensity = clamp((24.0 - v_position.z) / 24.0, 0.0, 1.0) * 0.125;
 
@@ -325,7 +338,7 @@ void main() {
   vec3 ao = vec3(ao_intensity);
 
   float diffuse_amount = max(dot(v_normal, tile_info.light_direction), 0.0);
-  vec3 ambient = light_color * light_intensity * 0.5;
+  vec3 ambient = light_color * light_intensity * 1.0;
   vec3 diffuse = light_color * light_intensity * diffuse_amount;
   vec4 light = vec4(ambient + diffuse - ao, 1.0);
 
@@ -340,7 +353,7 @@ static const String fill_extrusion_vert = '''
 
 precision highp float;
 
-uniform TileInfo {
+layout (std140) uniform TileInfo {
   // transforms and camera
   mat4 mvp;
   mat4 camera_transform;
@@ -451,7 +464,7 @@ void main() {
 static const String line_vert = '''
 #version 460 core
 
-uniform TileInfo {
+layout (std140) uniform TileInfo {
   // transforms and camera
   mat4 mvp;
   mat4 camera_transform;

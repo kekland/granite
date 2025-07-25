@@ -29,7 +29,7 @@ abstract base class LayerTileMaterial<TNode extends LayerTileNode> extends scene
       ),
     );
 
-    pass.setCullMode(gpu.CullMode.backFace);
+    pass.setCullMode(gpu.CullMode.none);
     pass.setWindingOrder(gpu.WindingOrder.clockwise);
   }
 }

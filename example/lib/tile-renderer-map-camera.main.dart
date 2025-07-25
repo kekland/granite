@@ -6,10 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_scene/scene.dart';
 import 'package:granite/renderer/core/camera/map_camera.dart';
 import 'package:granite/renderer/renderer.dart';
-import 'package:granite/spec/spec.dart';
+import 'package:granite/spec/spec.dart' as spec;
 import 'package:granite_example/fixtures/maptiler-api-key.dart';
 import 'package:granite_example/fixtures/styles.dart';
-import 'package:granite_example/orthographic_camera.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:vector_math/vector_math_64.dart' as vm;
 
@@ -42,7 +41,7 @@ class _TileRendererTestState extends State<TileRendererMapCameraTest> with Ticke
   late final focusNode = FocusNode();
   late final scene = Scene();
   late final rendererNode = RendererNode(
-    style: Style.fromJson(jsonDecode(maptilerStreetsStyle)),
+    style: spec.Style.fromJson(jsonDecode(maptilerStreetsStyle)),
     shaderLibraryProvider: HotReloadableShaderLibraryProvider('assets/maptiler-streets.shaderbundle'),
   );
 
@@ -69,6 +68,12 @@ class _TileRendererTestState extends State<TileRendererMapCameraTest> with Ticke
   late final _bT = Tween<double>(begin: 0.0, end: 0.0);
   late final _pT = Tween<double>(begin: 0.0, end: 0.0);
 
+  // late final _latT = Tween<double>(begin: 0, end: 0);
+  // late final _lonT = Tween<double>(begin: 0, end: 0);
+  // late final _zT = Tween<double>(begin: 0.0, end: 0.0);
+  // late final _bT = Tween<double>(begin: 0.0, end: 0.0);
+  // late final _pT = Tween<double>(begin: 0.0, end: 0.0);
+
   double get lat => _latT.evaluate(_acLat);
   double get lon => _lonT.evaluate(_acLon);
   double get z => _zT.evaluate(_acZ);
@@ -88,8 +93,8 @@ class _TileRendererTestState extends State<TileRendererMapCameraTest> with Ticke
   void initState() {
     super.initState();
     rendererNode.addListener(() => setState(() {}));
+    scene.antiAliasingMode = AntiAliasingMode.msaa;
     scene.add(rendererNode);
-    scene.addMesh(Mesh(CuboidGeometry(vm.Vector3(1.0, 1.0, 1.0)), UnlitMaterial()));
 
     _load();
   }
@@ -211,11 +216,11 @@ class _TileRendererTestState extends State<TileRendererMapCameraTest> with Ticke
 
           if (e.logicalKey == LogicalKeyboardKey.keyR) {
             _pT.begin = pitch;
-            _pT.end = (pitch + 5.0).clamp(-90.0, 90.0);
+            _pT.end = (pitch - 5.0).clamp(-90.0, 90.0);
             _acP.forward(from: 0.0);
           } else if (e.logicalKey == LogicalKeyboardKey.keyF) {
             _pT.begin = pitch;
-            _pT.end = (pitch - 5.0).clamp(-90.0, 90.0);
+            _pT.end = (pitch + 5.0).clamp(-90.0, 90.0);
             _acP.forward(from: 0.0);
           }
 
@@ -269,6 +274,8 @@ class _ScenePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final dimensions = size * pixelRatio;
+
     final camera = MapCamera(
       center: center,
       zoom: zoom,
@@ -277,9 +284,11 @@ class _ScenePainter extends CustomPainter {
       pitch: pitch,
     );
 
+    // print('lat: ${center.latitude}, lon: ${center.longitude}, zoom: $zoom, bearing: $bearing, pitch: $pitch');
+
     // canvas.drawColor(Colors.red, BlendMode.src);
     canvas.scale(1 / pixelRatio);
-    scene.render(camera, canvas, viewport: Offset.zero & (size * pixelRatio));
+    scene.render(camera, canvas, viewport: Offset.zero & dimensions);
     canvas.scale(pixelRatio);
   }
 

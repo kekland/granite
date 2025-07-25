@@ -30,7 +30,7 @@ void main() {
   vec3 ao = vec3(ao_intensity);
 
   float diffuse_amount = max(dot(v_normal, tile_info.light_direction), 0.0);
-  vec3 ambient = light_color * light_intensity * 0.5;
+  vec3 ambient = light_color * light_intensity * 1.0;
   vec3 diffuse = light_color * light_intensity * diffuse_amount;
   vec4 light = vec4(ambient + diffuse - ao, 1.0);
 

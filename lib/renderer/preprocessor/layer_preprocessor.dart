@@ -1,4 +1,5 @@
 import 'package:granite/renderer/core/props/prop_instruction.dart';
+import 'package:granite/renderer/dev/supported_layers.dart';
 import 'package:granite/renderer/preprocessor/analysis/property_analyzer.dart';
 import 'package:granite/renderer/preprocessor/gen/raw_shaders.dart';
 import 'package:granite/renderer/utils/byte_data_utils.dart';
@@ -107,6 +108,8 @@ List<String> _indentLines(List<String> lines, [int indent = 2]) {
 }
 
 (String, String)? _getShaderCode(spec.Layer layer) {
+  if (!supportedLayers.contains(layer.type)) return null;
+
   return switch (layer.type) {
     Layer$Type.background => (RawShaders.background_vert, RawShaders.background_frag),
     Layer$Type.fill => (RawShaders.fill_vert, RawShaders.fill_frag),

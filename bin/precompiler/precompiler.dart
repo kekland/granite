@@ -36,6 +36,7 @@ Future<void> precompileStyle({
   final preprocessedStyle = StylePreprocessor.preprocess(style);
 
   print('starting compilation');
+  print('impellerC path: ${await findImpellerC()}');
   final bundles = await preprocessedStyle.layers.nonNulls
       .map(
         (v) => _compileLayer(

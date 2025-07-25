@@ -7,6 +7,10 @@ export 'fill_extrusion/fill_extrusion.dart';
 export 'line/line.dart';
 
 LayerNode createLayerNode(spec.Layer specLayer, PreprocessedLayer preprocessedLayer) {
+  if (!supportedLayers.contains(specLayer.type)) {
+    throw UnsupportedError('Unsupported layer type: ${specLayer.type}, id: ${specLayer.id}');
+  }
+
   return switch (specLayer.type) {
     spec.Layer$Type.background => BackgroundLayerNode(
       specLayer: specLayer as spec.LayerBackground,

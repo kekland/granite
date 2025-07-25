@@ -89,19 +89,19 @@ class _TileRendererTestState extends State<TileRendererTest> with TickerProvider
 
   // final focusLat = 0.0;
   // final focusLon = 0.0;
-  // var xTween = Tween<double>(begin: 2000.0, end: 2000.0);
-  // var yTween = Tween<double>(begin: 2000.0, end: 2000.0);
-  // var dTween = Tween<double>(begin: 6000.0, end: 6000.0);
-  // var rotTween = Tween<double>(begin: pi / 2, end: pi / 2);
-  // var phiTween = Tween<double>(begin: 89.0, end: 89.0);
+  var xTween = Tween<double>(begin: 2000.0, end: 2000.0);
+  var yTween = Tween<double>(begin: 2000.0, end: 2000.0);
+  var dTween = Tween<double>(begin: 6000.0, end: 6000.0);
+  var rotTween = Tween<double>(begin: pi / 2, end: pi / 2);
+  var phiTween = Tween<double>(begin: 89.0, end: 89.0);
 
   // final focusLat = 0.0;
   // final focusLon = 0.0;
-  var xTween = Tween<double>(begin: 0.0, end: 0.0);
-  var yTween = Tween<double>(begin: 0.0, end: 0.0);
-  var dTween = Tween<double>(begin: RendererNode.kTileSize, end: RendererNode.kTileSize);
-  var rotTween = Tween<double>(begin: 90.0, end: 90.0);
-  var phiTween = Tween<double>(begin: 89.0, end: 89.0);
+  // var xTween = Tween<double>(begin: 0.0, end: 0.0);
+  // var yTween = Tween<double>(begin: 0.0, end: 0.0);
+  // var dTween = Tween<double>(begin: RendererNode.kTileSize, end: RendererNode.kTileSize);
+  // var rotTween = Tween<double>(begin: 90.0, end: 90.0);
+  // var phiTween = Tween<double>(begin: 89.0, end: 89.0);
 
   double get x => xTween.evaluate(_animationControllerX);
   double get y => yTween.evaluate(_animationControllerY);
@@ -139,7 +139,7 @@ class _TileRendererTestState extends State<TileRendererTest> with TickerProvider
     final focusY = (1 - log(tan(focusLat * pi / 180) + 1 / cos(focusLat * pi / 180)) / pi) / 2;
     const range = 0;
 
-    for (var z = 0; z <= 0; z++) {
+    for (var z = 14; z <= 14; z++) {
       final xMax = pow(2, z).toInt() - 1;
       final yMax = pow(2, z).toInt() - 1;
       final x = (xMax * focusX).floor();

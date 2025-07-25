@@ -1,4 +1,4 @@
-uniform TileInfo {
+layout (std140) uniform TileInfo {
   // transforms and camera
   mat4 mvp;
   mat4 camera_transform;

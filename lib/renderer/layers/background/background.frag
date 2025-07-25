@@ -7,6 +7,8 @@ precision highp float;
 #pragma prop: declare(highp vec4 color)
 #pragma prop: declare(highp float opacity)
 
+in vec3 v_world_position;
+
 out highp vec4 f_color;
 
 void main() {

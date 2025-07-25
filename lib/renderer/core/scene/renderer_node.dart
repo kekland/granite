@@ -102,17 +102,7 @@ final class RendererNode extends scene.Node with ChangeNotifier {
   @override
   void render(scene.SceneEncoder encoder, vm.Matrix4 parentWorldTransform) {
     final camera = encoder.camera as MapCamera;
-    // 512 - zoom 0
-    // 256 - zoom 1
-    // 128 - zoom 2
-    // 64 - zoom 3
-    // 32 - zoom 4
-
     _evalContext = _evalContext.copyWithZoom(camera.zoom);
-
-    encoder.renderPass.setDepthWriteEnable(true);
-    encoder.renderPass.setColorBlendEnable(false);
-    encoder.renderPass.setDepthCompareOperation(gpu.CompareFunction.lessEqual);
 
     super.render(encoder, parentWorldTransform);
   }
