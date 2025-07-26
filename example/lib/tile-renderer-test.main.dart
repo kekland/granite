@@ -6,9 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_scene/scene.dart';
 import 'package:granite/renderer/renderer.dart';
 import 'package:granite/spec/spec.dart';
-import 'package:granite_example/fixtures/maptiler-api-key.dart';
 import 'package:granite_example/fixtures/styles.dart';
-import 'package:granite_example/orthographic_camera.dart';
 import 'package:vector_math/vector_math_64.dart' as vm;
 
 Future<void> main() async {

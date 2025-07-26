@@ -8,7 +8,6 @@ import 'package:granite/renderer/core/gpu/uniform_utils.dart';
 import 'package:granite/renderer/renderer.dart';
 import 'package:granite/renderer/utils/byte_data_utils.dart';
 import 'package:granite/spec/spec.dart' as spec;
-import 'package:granite/vector_tile/vector_tile.dart' as vt;
 import 'package:vector_math/vector_math_64.dart' as vm;
 
 vm.Matrix4 _getLayerTileTransform(TileCoordinates c, double zoom) {

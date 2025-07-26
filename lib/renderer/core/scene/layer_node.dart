@@ -1,11 +1,7 @@
-import 'dart:typed_data';
-
-import 'package:collection/collection.dart';
 import 'package:flutter_gpu/gpu.dart' as gpu;
 import 'package:flutter_scene/scene.dart' as scene;
 import 'package:granite/renderer/renderer.dart';
 import 'package:granite/spec/gen/style.gen.dart' as spec;
-import 'package:granite/vector_tile/vector_tile.dart' as vt;
 import 'package:vector_math/vector_math_64.dart';
 
 abstract base class LayerNode<TSpec extends spec.Layer> extends scene.Node with RendererDescendantNode {

@@ -245,10 +245,11 @@ base class LineLayerTileGeometry extends LayerTileGeometry<LineLayerTileNode> {
       return;
     }
 
+    geometryData!.materialize();
     uploadVertexData(
-      geometryData!.vertexData.materialize().asByteData(),
+      geometryData!.vertexByteData!,
       geometryData!.vertexCount,
-      geometryData!.indexData.materialize().asByteData(),
+      geometryData!.indexByteData!,
       indexType: gpu.IndexType.int32,
     );
   }

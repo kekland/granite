@@ -16,6 +16,15 @@ class GeometryData {
   final TransferableTypedData vertexData;
   final int vertexCount;
   final TransferableTypedData indexData;
+
+  ByteData? vertexByteData;
+  ByteData? indexByteData;
+
+  void materialize() {
+    if (vertexByteData != null && indexByteData != null) return;
+    vertexByteData = vertexData.materialize().asByteData();
+    indexByteData = indexData.materialize().asByteData();
+  }
 }
 
 abstract base class LayerTileGeometry<TNode extends LayerTileNode> extends scene.Geometry {

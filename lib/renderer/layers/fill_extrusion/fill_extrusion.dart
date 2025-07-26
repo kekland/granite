@@ -5,7 +5,6 @@ import 'package:flutter_gpu/gpu.dart' as gpu;
 import 'package:flutter_scene/scene.dart' as scene;
 import 'package:granite/renderer/core/gpu/customizable_surface.dart';
 import 'package:granite/renderer/renderer.dart';
-import 'package:granite/renderer/shaders/texture.dart';
 import 'package:granite/renderer/utils/byte_data_utils.dart';
 import 'package:granite/renderer/utils/filter_features.dart';
 import 'package:granite/renderer/utils/tessellator.dart';
@@ -193,10 +192,11 @@ final class FillExtrusionLayerTileGeometry extends LayerTileGeometry<FillExtrusi
       return;
     }
 
+    geometryData!.materialize();
     uploadVertexData(
-      geometryData!.vertexData.materialize().asByteData(),
+      geometryData!.vertexByteData!,
       geometryData!.vertexCount,
-      geometryData!.indexData.materialize().asByteData(),
+      geometryData!.indexByteData!,
       indexType: gpu.IndexType.int32,
     );
   }

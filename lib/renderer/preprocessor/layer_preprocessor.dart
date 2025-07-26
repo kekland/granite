@@ -3,7 +3,6 @@ import 'package:granite/renderer/dev/supported_layers.dart';
 import 'package:granite/renderer/preprocessor/analysis/property_analyzer.dart';
 import 'package:granite/renderer/preprocessor/gen/raw_shaders.dart';
 import 'package:granite/renderer/utils/byte_data_utils.dart';
-import 'package:granite/spec/gen/style.gen.dart';
 import 'package:granite/spec/spec.dart' as spec;
 import 'package:vector_math/vector_math_64.dart' as vm;
 

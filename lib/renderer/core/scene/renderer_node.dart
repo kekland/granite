@@ -7,16 +7,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_gpu/gpu.dart' as gpu;
 import 'package:flutter_scene/scene.dart' as scene;
 import 'package:granite/renderer/core/camera/light_camera.dart';
-import 'package:granite/renderer/core/camera/map_camera.dart';
 import 'package:granite/renderer/core/gpu/customizable_surface.dart';
 import 'package:granite/renderer/core/gpu/stencil_ref_buffer.dart';
 import 'package:granite/renderer/core/scene/tile_stencil_node.dart';
 import 'package:granite/renderer/isolates/isolates.dart';
-import 'package:granite/renderer/shaders/texture.dart';
 import 'package:granite/spec/spec.dart' as spec;
 
 import 'package:granite/renderer/renderer.dart';
-import 'package:granite/vector_tile/vector_tile.dart' as vt;
 import 'package:vector_math/vector_math_64.dart' as vm;
 
 // TODOS:

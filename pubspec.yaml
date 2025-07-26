@@ -21,6 +21,7 @@ dependencies:
   dart_earcut: ^1.2.0
   latlong2: ^0.9.1
   http: ^1.4.0
+  quiver: ^3.2.2
 
   # spec
   intl: ^0.20.2
