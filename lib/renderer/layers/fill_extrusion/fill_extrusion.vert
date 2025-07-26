@@ -15,6 +15,7 @@ in highp vec3 normal;
 
 out vec3 v_position;
 out vec3 v_normal;
+out vec4 v_frag_pos_light_space;
 
 void main() {
   #pragma prop: resolve
@@ -23,5 +24,6 @@ void main() {
 
   v_position = resolved_pos;
   v_normal = normal;
+  v_frag_pos_light_space = tile_info.light_mvp * vec4(resolved_pos, 1.0);
   gl_Position = tile_info.mvp * vec4(resolved_pos, 1.0);
 }

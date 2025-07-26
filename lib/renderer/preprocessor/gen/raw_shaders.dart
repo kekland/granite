@@ -71,17 +71,35 @@ float prop_interpolate_factor(
   else return (pow(base, progress) - 1.0) / (pow(base, difference) - 1.0);
 }
 
+uniform sampler2D u_shadow_map;
+
+float get_visibility(vec4 v_frag_pos_light_space, sampler2D u_shadow_map, float bias) {
+  vec3 proj_light_coords = v_frag_pos_light_space.xyz / v_frag_pos_light_space.w;
+  proj_light_coords.x = proj_light_coords.x * 0.5 + 0.5; // convert from [-1, 1] to [0, 1]
+  proj_light_coords.y = proj_light_coords.y * 0.5 + 0.5; // convert from [-1, 1] to [0, 1]
+  proj_light_coords.z = proj_light_coords.z;
+
+  float current_depth = proj_light_coords.z;
+  float closest_depth = texture(u_shadow_map, vec2(proj_light_coords.x, 1.0 - proj_light_coords.y)).r;
+  float visibility = current_depth - bias > closest_depth ? 0.0 : 1.0;
+  if (proj_light_coords.z > 1.0) visibility = 1.0;
+  if (proj_light_coords.z < 0.0) visibility = 1.0;
+
+  return visibility;
+}
 
 #pragma prop: declare(highp vec4 color)
 #pragma prop: declare(highp float opacity)
 
-in vec3 v_world_position;
+in vec4 v_frag_pos_light_space;
 
 out highp vec4 f_color;
 
 void main() {
   #pragma prop: resolve
-  f_color = color * opacity;
+  float visibility = get_visibility(v_frag_pos_light_space, u_shadow_map, 0.005);
+  visibility = visibility * 0.5 + 0.5;
+  f_color = vec4(color.rgb * visibility, color.a) * opacity;
 }
 
 ''';
@@ -102,6 +120,7 @@ layout (std140) uniform TileInfo {
   vec3 light_direction;
   float light_intensity;
   vec4 light_color;
+  mat4 light_mvp;
 
   // other data
   float units_per_pixel;
@@ -139,12 +158,12 @@ in highp vec2 position;
 #pragma prop: declare(highp vec4 color)
 #pragma prop: declare(highp float opacity)
 
-out vec3 v_world_position;
+out vec4 v_frag_pos_light_space;
 
 void main() {
-  #pragma prop: resolve(...)
-  vec4 world_position = tile_info.model_transform * vec4(position, 0.0, 1.0);
-  v_world_position = world_position.xyz;
+  #pragma prop: resolve
+
+  v_frag_pos_light_space = tile_info.light_mvp * vec4(position, 0.0, 1.0);
   gl_Position = tile_info.mvp * vec4(position, 0.0, 1.0);
 }
 
@@ -180,19 +199,37 @@ float prop_interpolate_factor(
   else return (pow(base, progress) - 1.0) / (pow(base, difference) - 1.0);
 }
 
+uniform sampler2D u_shadow_map;
+
+float get_visibility(vec4 v_frag_pos_light_space, sampler2D u_shadow_map, float bias) {
+  vec3 proj_light_coords = v_frag_pos_light_space.xyz / v_frag_pos_light_space.w;
+  proj_light_coords.x = proj_light_coords.x * 0.5 + 0.5; // convert from [-1, 1] to [0, 1]
+  proj_light_coords.y = proj_light_coords.y * 0.5 + 0.5; // convert from [-1, 1] to [0, 1]
+  proj_light_coords.z = proj_light_coords.z;
+
+  float current_depth = proj_light_coords.z;
+  float closest_depth = texture(u_shadow_map, vec2(proj_light_coords.x, 1.0 - proj_light_coords.y)).r;
+  float visibility = current_depth - bias > closest_depth ? 0.0 : 1.0;
+  if (proj_light_coords.z > 1.0) visibility = 1.0;
+  if (proj_light_coords.z < 0.0) visibility = 1.0;
+
+  return visibility;
+}
 
 #pragma prop: declare(bool antialias)
 #pragma prop: declare(highp float opacity)
 #pragma prop: declare(highp vec4 color)
 #pragma prop: declare(highp vec2 translate)
 
-in vec3 v_world_position;
+in vec4 v_frag_pos_light_space;
 
 out highp vec4 f_color;
 
 void main() {
   #pragma prop: resolve
-  f_color = color * opacity;
+  float visibility = get_visibility(v_frag_pos_light_space, u_shadow_map, 0.005);
+  visibility = visibility * 0.5 + 0.5;
+  f_color = vec4(color.rgb * visibility, color.a) * opacity;
 }
 
 ''';
@@ -213,6 +250,7 @@ layout (std140) uniform TileInfo {
   vec3 light_direction;
   float light_intensity;
   vec4 light_color;
+  mat4 light_mvp;
 
   // other data
   float units_per_pixel;
@@ -252,14 +290,13 @@ in highp vec2 position;
 #pragma prop: declare(highp vec4 color)
 #pragma prop: declare(highp vec2 translate)
 
-out vec3 v_world_position;
+out vec4 v_frag_pos_light_space;
 
 void main() {
   #pragma prop: resolve
   vec2 translated = position + translate;
-  vec4 world_position = tile_info.model_transform * vec4(translated, 0.0, 1.0);
 
-  v_world_position = world_position.xyz;
+  v_frag_pos_light_space = tile_info.light_mvp * vec4(translated, 0.0, 1.0);
   gl_Position = tile_info.mvp * vec4(translated, 0.0, 1.0);
 }
 
@@ -281,6 +318,7 @@ layout (std140) uniform TileInfo {
   vec3 light_direction;
   float light_intensity;
   vec4 light_color;
+  mat4 light_mvp;
 
   // other data
   float units_per_pixel;
@@ -312,6 +350,22 @@ float prop_interpolate_factor(
   else return (pow(base, progress) - 1.0) / (pow(base, difference) - 1.0);
 }
 
+uniform sampler2D u_shadow_map;
+
+float get_visibility(vec4 v_frag_pos_light_space, sampler2D u_shadow_map, float bias) {
+  vec3 proj_light_coords = v_frag_pos_light_space.xyz / v_frag_pos_light_space.w;
+  proj_light_coords.x = proj_light_coords.x * 0.5 + 0.5; // convert from [-1, 1] to [0, 1]
+  proj_light_coords.y = proj_light_coords.y * 0.5 + 0.5; // convert from [-1, 1] to [0, 1]
+  proj_light_coords.z = proj_light_coords.z;
+
+  float current_depth = proj_light_coords.z;
+  float closest_depth = texture(u_shadow_map, vec2(proj_light_coords.x, 1.0 - proj_light_coords.y)).r;
+  float visibility = current_depth - bias > closest_depth ? 0.0 : 1.0;
+  if (proj_light_coords.z > 1.0) visibility = 1.0;
+  if (proj_light_coords.z < 0.0) visibility = 1.0;
+
+  return visibility;
+}
 
 #pragma prop: declare(highp vec4 color)
 #pragma prop: declare(highp vec2 translate)
@@ -320,11 +374,16 @@ float prop_interpolate_factor(
 
 in vec3 v_position;
 in vec3 v_normal;
+in vec4 v_frag_pos_light_space;
 
 out highp vec4 f_color;
 
 void main() {
   #pragma prop: resolve(...)
+
+  // Shadow mapping
+  float bias = max(0.05 * (1.0 - dot(v_normal, tile_info.light_direction)), 0.005);
+  float visibility = get_visibility(v_frag_pos_light_space, u_shadow_map, bias);
 
   // Lights
   vec3 light_color = tile_info.light_color.rgb;
@@ -338,7 +397,7 @@ void main() {
   vec3 ao = vec3(ao_intensity);
 
   float diffuse_amount = max(dot(v_normal, tile_info.light_direction), 0.0);
-  vec3 ambient = light_color * light_intensity * 1.0;
+  vec3 ambient = light_color * light_intensity * 1.0 * (visibility * 0.5 + 0.5);
   vec3 diffuse = light_color * light_intensity * diffuse_amount;
   vec4 light = vec4(ambient + diffuse - ao, 1.0);
 
@@ -364,6 +423,7 @@ layout (std140) uniform TileInfo {
   vec3 light_direction;
   float light_intensity;
   vec4 light_color;
+  mat4 light_mvp;
 
   // other data
   float units_per_pixel;
@@ -406,6 +466,7 @@ in highp vec3 normal;
 
 out vec3 v_position;
 out vec3 v_normal;
+out vec4 v_frag_pos_light_space;
 
 void main() {
   #pragma prop: resolve
@@ -414,6 +475,7 @@ void main() {
 
   v_position = resolved_pos;
   v_normal = normal;
+  v_frag_pos_light_space = tile_info.light_mvp * vec4(resolved_pos, 1.0);
   gl_Position = tile_info.mvp * vec4(resolved_pos, 1.0);
 }
 
@@ -447,16 +509,36 @@ float prop_interpolate_factor(
   else return (pow(base, progress) - 1.0) / (pow(base, difference) - 1.0);
 }
 
+uniform sampler2D u_shadow_map;
+
+float get_visibility(vec4 v_frag_pos_light_space, sampler2D u_shadow_map, float bias) {
+  vec3 proj_light_coords = v_frag_pos_light_space.xyz / v_frag_pos_light_space.w;
+  proj_light_coords.x = proj_light_coords.x * 0.5 + 0.5; // convert from [-1, 1] to [0, 1]
+  proj_light_coords.y = proj_light_coords.y * 0.5 + 0.5; // convert from [-1, 1] to [0, 1]
+  proj_light_coords.z = proj_light_coords.z;
+
+  float current_depth = proj_light_coords.z;
+  float closest_depth = texture(u_shadow_map, vec2(proj_light_coords.x, 1.0 - proj_light_coords.y)).r;
+  float visibility = current_depth - bias > closest_depth ? 0.0 : 1.0;
+  if (proj_light_coords.z > 1.0) visibility = 1.0;
+  if (proj_light_coords.z < 0.0) visibility = 1.0;
+
+  return visibility;
+}
 
 #pragma prop: declare(highp vec4 color)
 #pragma prop: declare(float opacity)
 #pragma prop: declare(float width)
 
+in vec4 v_frag_pos_light_space;
+
 out highp vec4 f_color;
 
 void main() {
   #pragma prop: resolve
-  f_color = color * opacity;
+  float visibility = get_visibility(v_frag_pos_light_space, u_shadow_map, 0.005);
+  visibility = visibility * 0.5 + 0.5;
+  f_color = vec4(color.rgb * visibility, color.a) * opacity;
 }
 
 ''';
@@ -475,6 +557,7 @@ layout (std140) uniform TileInfo {
   vec3 light_direction;
   float light_intensity;
   vec4 light_color;
+  mat4 light_mvp;
 
   // other data
   float units_per_pixel;
@@ -514,6 +597,8 @@ in highp vec2 normal;
 #pragma prop: declare(float opacity)
 #pragma prop: declare(float width)
 
+out vec4 v_frag_pos_light_space;
+
 void main() {
   #pragma prop: resolve
 
@@ -522,6 +607,7 @@ void main() {
   vec2 offset = normal * local_width * 0.5;
   vec2 resolved_pos = position + offset;
 
+  v_frag_pos_light_space = tile_info.light_mvp * vec4(resolved_pos, 0.0, 1.0);
   gl_Position = tile_info.mvp * vec4(resolved_pos, 0.0, 1.0);
 }
 

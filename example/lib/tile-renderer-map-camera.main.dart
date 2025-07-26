@@ -45,34 +45,36 @@ class _TileRendererTestState extends State<TileRendererMapCameraTest> with Ticke
     shaderLibraryProvider: HotReloadableShaderLibraryProvider('assets/maptiler-streets.shaderbundle'),
   );
 
-  // NY
-  // final focusLat = 40.7128;
-  // final focusLon = -74.0060;
-
-  // Milano
-  // final focusLat = 45.4642;
-  // final focusLon = 9.1900;
-
-  // final focusLat = 0.0;
-  // final focusLon = 0.0;
-
   late final _acLat = AnimationController(vsync: this, duration: const Duration(milliseconds: 75));
   late final _acLon = AnimationController(vsync: this, duration: const Duration(milliseconds: 75));
   late final _acZ = AnimationController(vsync: this, duration: const Duration(milliseconds: 100));
   late final _acB = AnimationController(vsync: this, duration: const Duration(milliseconds: 100));
   late final _acP = AnimationController(vsync: this, duration: const Duration(milliseconds: 100));
 
+  late final _bT = Tween<double>(begin: 0.0, end: 0.0);
+  late final _pT = Tween<double>(begin: 0.0, end: 0.0);
+
+  // NYC
   // late final _latT = Tween<double>(begin: 40.7128, end: 40.7128);
   // late final _lonT = Tween<double>(begin: -74.0060, end: -74.0060);
   // late final _zT = Tween<double>(begin: 13.0, end: 13.0);
+
+  // Milano
+  late final _latT = Tween<double>(begin: 45.4642, end: 45.4642);
+  late final _lonT = Tween<double>(begin: 9.1900, end: 9.1900);
+  late final _zT = Tween<double>(begin: 14.0, end: 14.0);
+
+  // Almaty
+  // late final _latT = Tween<double>(begin: 43.2220, end: 43.2220);
+  // late final _lonT = Tween<double>(begin: 76.8512, end: 76.8512);
+  // late final _zT = Tween<double>(begin: 14.0, end: 14.0);
+
+
+  // late final _latT = Tween<double>(begin: 0, end: 0);
+  // late final _lonT = Tween<double>(begin: 0, end: 0);
+  // late final _zT = Tween<double>(begin: 0.0, end: 0.0);
   // late final _bT = Tween<double>(begin: 0.0, end: 0.0);
   // late final _pT = Tween<double>(begin: 0.0, end: 0.0);
-
-  late final _latT = Tween<double>(begin: 0, end: 0);
-  late final _lonT = Tween<double>(begin: 0, end: 0);
-  late final _zT = Tween<double>(begin: 0.0, end: 0.0);
-  late final _bT = Tween<double>(begin: 0.0, end: 0.0);
-  late final _pT = Tween<double>(begin: 0.0, end: 0.0);
 
   double get lat => _latT.evaluate(_acLat);
   double get lon => _lonT.evaluate(_acLon);
@@ -84,8 +86,8 @@ class _TileRendererTestState extends State<TileRendererMapCameraTest> with Ticke
   void reassemble() {
     super.reassemble();
 
-    _load();
-    rendererNode.removeAll();
+    // _load();
+    // rendererNode.removeAll();
     rendererNode.reassemble();
   }
 
@@ -102,9 +104,9 @@ class _TileRendererTestState extends State<TileRendererMapCameraTest> with Ticke
   void _load() {
     final focusX = (lon + 180) / 360;
     final focusY = (1 - log(tan(lat * pi / 180) + 1 / cos(lat * pi / 180)) / pi) / 2;
-    const range = 1;
+    const range = 2;
 
-    for (var z = 0; z <= 0; z++) {
+    for (var z = 14; z <= 14; z++) {
       final xMax = pow(2, z).toInt() - 1;
       final yMax = pow(2, z).toInt() - 1;
       final x = (xMax * focusX).floor();
@@ -216,11 +218,11 @@ class _TileRendererTestState extends State<TileRendererMapCameraTest> with Ticke
 
           if (e.logicalKey == LogicalKeyboardKey.keyR) {
             _pT.begin = pitch;
-            _pT.end = (pitch - 5.0).clamp(-90.0, 90.0);
+            _pT.end = (pitch - 5.0).clamp(0.0, 90.0);
             _acP.forward(from: 0.0);
           } else if (e.logicalKey == LogicalKeyboardKey.keyF) {
             _pT.begin = pitch;
-            _pT.end = (pitch + 5.0).clamp(-90.0, 90.0);
+            _pT.end = (pitch + 5.0).clamp(0.0, 90.0);
             _acP.forward(from: 0.0);
           }
 

@@ -1,9 +1,13 @@
 import 'dart:math';
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_gpu/gpu.dart' as gpu;
 import 'package:flutter_scene/scene.dart' as scene;
+import 'package:granite/renderer/core/camera/light_camera.dart';
 import 'package:granite/renderer/core/camera/map_camera.dart';
+import 'package:granite/renderer/core/gpu/customizable_surface.dart';
+import 'package:granite/renderer/shaders/texture.dart';
 import 'package:granite/spec/spec.dart' as spec;
 
 import 'package:granite/renderer/renderer.dart';
@@ -99,12 +103,49 @@ final class RendererNode extends scene.Node with ChangeNotifier {
     }
   }
 
+  final _shadowPassSurface = CustomizableSurface();
+  final _shadowMapSize = ui.Size(2048, 2048);
+  gpu.Texture get shadowMapTexture =>
+      _shadowPassSurface.getNextRenderTarget(_shadowMapSize, false).depthStencilAttachment!.texture;
+
+  vm.Matrix4 get lightCameraVp => _lightCameraVp;
+  var _lightCameraVp = vm.Matrix4.identity();
+
   @override
   void render(scene.SceneEncoder encoder, vm.Matrix4 parentWorldTransform) {
     final camera = encoder.camera as MapCamera;
     _evalContext = _evalContext.copyWithZoom(camera.zoom);
 
+    // Compute light
+    final light = style.light ?? spec.Light.withDefaults();
+    final lightPosition = light.position.evaluate(baseEvaluationContext);
+    final a = lightPosition.y * vm.degrees2Radians;
+    final p = lightPosition.z * vm.degrees2Radians;
+    final lightDirection = vm.Vector3(cos(a) * sin(p), sin(a) * sin(p), cos(p));
+
+    // First up - shadow pass.
+    // We create a new camera and an encoder, and render everything into that pass.
+    final shadowPassRenderTarget = _shadowPassSurface.getNextRenderTarget(_shadowMapSize, false);
+    final lightCamera = LightCamera(mainCamera: camera, direction: vm.Vector3(-lightDirection.x, -lightDirection.y, lightDirection.z));
+    final shadowPassEncoder = scene.SceneEncoder(
+      shadowPassRenderTarget,
+      lightCamera,
+      _shadowMapSize,
+      scene.Environment(),
+    );
+
+    _lightCameraVp = shadowPassEncoder.cameraTransform;
+    super.render(shadowPassEncoder, parentWorldTransform);
+    shadowPassEncoder.finish();
+
+    // Finally - forward pass.
     super.render(encoder, parentWorldTransform);
+
+    encoder.encode(
+      vm.Matrix4.identity(),
+      TextureGeometry(renderer: this),
+      TextureMaterial(renderer: this, texture: shadowMapTexture, opacity: 0.0),
+    );
   }
 }
 

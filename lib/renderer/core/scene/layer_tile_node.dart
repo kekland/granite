@@ -75,7 +75,7 @@ abstract base class LayerTileNode<TSpec extends spec.Layer, TLayer extends Layer
     final slot = fragmentShaderSlot.sizeInBytes != null ? fragmentShaderSlot : vertexShaderSlot;
 
     // mat4, mat4, mat4 vec3, vec3
-    final tileInfoData = ByteData(272);
+    final tileInfoData = ByteData(272 + 64);
     tileInfoData.setMat4(slot.getMemberOffsetInBytes('mvp')!, cameraTransform * modelTransform);
     tileInfoData.setMat4(slot.getMemberOffsetInBytes('camera_transform')!, cameraTransform);
     tileInfoData.setMat4(slot.getMemberOffsetInBytes('model_transform')!, modelTransform);
@@ -83,6 +83,7 @@ abstract base class LayerTileNode<TSpec extends spec.Layer, TLayer extends Layer
     tileInfoData.setVec3(slot.getMemberOffsetInBytes('light_direction')!, lightDirection);
     tileInfoData.setFloat(slot.getMemberOffsetInBytes('light_intensity')!, lightIntensity.toDouble());
     tileInfoData.setVec4(slot.getMemberOffsetInBytes('light_color')!, lightColor.vec);
+    tileInfoData.setMat4(slot.getMemberOffsetInBytes('light_mvp')!, renderer.lightCameraVp * localTransform);
     tileInfoData.setFloat(slot.getMemberOffsetInBytes('units_per_pixel')!, unitsPerPixel);
     tileInfoData.setFloat(slot.getMemberOffsetInBytes('zoom')!, zoom);
     final view = encoder.transientsBuffer.emplace(tileInfoData);

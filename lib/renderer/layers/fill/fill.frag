@@ -3,17 +3,20 @@
 precision highp float;
 
 #pragma prelude: interpolation
+#pragma prelude: shadow-frag
 
 #pragma prop: declare(bool antialias)
 #pragma prop: declare(highp float opacity)
 #pragma prop: declare(highp vec4 color)
 #pragma prop: declare(highp vec2 translate)
 
-in vec3 v_world_position;
+in vec4 v_frag_pos_light_space;
 
 out highp vec4 f_color;
 
 void main() {
   #pragma prop: resolve
-  f_color = color * opacity;
+  float visibility = get_visibility(v_frag_pos_light_space, u_shadow_map, 0.005);
+  visibility = visibility * 0.5 + 0.5;
+  f_color = vec4(color.rgb * visibility, color.a) * opacity;
 }

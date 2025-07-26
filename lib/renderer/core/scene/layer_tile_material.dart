@@ -29,7 +29,16 @@ abstract base class LayerTileMaterial<TNode extends LayerTileNode> extends scene
       ),
     );
 
-    pass.setCullMode(gpu.CullMode.none);
+    pass.setCullMode(gpu.CullMode.backFace);
     pass.setWindingOrder(gpu.WindingOrder.clockwise);
+
+    pass.bindTexture(
+      fragmentShader.getUniformSlot('u_shadow_map'),
+      node.renderer.shadowMapTexture,
+      sampler: gpu.SamplerOptions(
+        widthAddressMode: gpu.SamplerAddressMode.clampToEdge,
+        heightAddressMode: gpu.SamplerAddressMode.clampToEdge,
+      ),
+    );
   }
 }

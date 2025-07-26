@@ -9,6 +9,7 @@ layout (std140) uniform TileInfo {
   vec3 light_direction;
   float light_intensity;
   vec4 light_color;
+  mat4 light_mvp;
 
   // other data
   float units_per_pixel;

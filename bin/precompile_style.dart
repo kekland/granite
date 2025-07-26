@@ -24,6 +24,11 @@ Future<void> main(List<String> args) async {
     'example/assets/maptiler-streets.shaderbundle',
   ];
 
+  // final args = [
+  //   'fixtures/maptiler-streets-v2-dark.json',
+  //   'example/assets/maptiler-streets-dark.shaderbundle',
+  // ];
+
   final timer = Stopwatch()..start();
 
   final styleFilePath = args[0];
