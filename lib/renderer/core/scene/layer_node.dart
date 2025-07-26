@@ -12,9 +12,16 @@ abstract base class LayerNode<TSpec extends spec.Layer> extends scene.Node with 
   final TSpec specLayer;
   final PreprocessedLayer preprocessedLayer;
 
-  late final vertexShader = renderer.getShader('${specLayer.id}-vert')!;
-  late final fragmentShader = renderer.getShader('${specLayer.id}-frag')!;
+  String get vertexShaderName => '${specLayer.id}-vert';
+  String get fragmentShaderName => '${specLayer.id}-frag';
+
+  late final vertexShader = renderer.getShader(vertexShaderName)!;
+  late final fragmentShader = renderer.getShader(fragmentShaderName)!;
   late final pipeline = gpu.gpuContext.createRenderPipeline(vertexShader, fragmentShader);
+  late final shadowPassPipeline = gpu.gpuContext.createRenderPipeline(
+    vertexShader,
+    renderer.getShader('shadow_pass_material-frag')!,
+  );
   late final vertexProps = VertexProps(instructions: preprocessedLayer.vertexPropInstructions);
   late final uniformProps = UniformProps(instructions: preprocessedLayer.uniformPropInstructions);
 
@@ -47,7 +54,7 @@ abstract base class LayerNode<TSpec extends spec.Layer> extends scene.Node with 
   @override
   void render(scene.SceneEncoder encoder, Matrix4 parentWorldTransform) {
     encoder.renderPass.clearBindings();
-    encoder.renderPass.bindPipeline(pipeline);
+    encoder.renderPass.bindPipeline(renderer.isShadowPass ? shadowPassPipeline : pipeline);
 
     uniformProps.bind(
       renderer.baseEvaluationContext,

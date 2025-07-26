@@ -23,6 +23,12 @@ class MapCamera extends scene.Camera {
   final double pitch;
   final double fov;
 
+  double _getCameraToCenterDistance(ui.Size dimensions) {
+    final fovRad = fov * vm.degrees2Radians;
+    final halfFov = fovRad / 2;
+    return 0.5 * (dimensions.height / pixelRatio) / math.tan(halfFov);
+  }
+
   vm.Matrix4 _getViewMatrix(ui.Size dimensions) {
     final tileSize = RendererNode.kTileSize;
     final worldSize = tileSize * math.pow(2, zoom).toDouble();
@@ -33,9 +39,7 @@ class MapCamera extends scene.Camera {
     final x = (lon + 180) / 360 * worldSize;
     final y = (1.0 - math.log(math.tan(math.pi / 4 + latRad / 2)) / math.pi) / 2 * worldSize;
 
-    final fovRad = fov * vm.degrees2Radians;
-    final halfFov = fovRad / 2;
-    final cameraToCenterDist = 0.5 * dimensions.height / math.tan(halfFov);
+    final cameraToCenterDist = _getCameraToCenterDistance(dimensions);
 
     final pitchRad = pitch * vm.degrees2Radians;
     final bearingRad = bearing * vm.degrees2Radians;
@@ -53,7 +57,7 @@ class MapCamera extends scene.Camera {
   vm.Matrix4 _getPerspectiveViewTransform(ui.Size dimensions) {
     final fovRad = fov * vm.degrees2Radians;
     final halfFov = fovRad / 2;
-    final cameraToCenterDist = 0.5 * dimensions.height / math.tan(halfFov);
+    final cameraToCenterDist = _getCameraToCenterDistance(dimensions);
 
     final pitchRad = pitch * vm.degrees2Radians;
     final groundAngle = math.pi / 2 + pitchRad;
@@ -69,18 +73,15 @@ class MapCamera extends scene.Camera {
       final double forwardReach = cameraToCenterDist / math.cos(bottomRayAngle);
       farZ = (forwardReach * 2.0).clamp(0.0, 10000.0);
     }
-    print('topRayMissesGround: $topRayMissesGround, farZ: $farZ');
 
     return _matrix4Perspective(fovRad, dimensions.aspectRatio, 1.0, farZ);
   }
 
   vm.Matrix4 _getOrthographicViewTransform(ui.Size dimensions) {
-    final halfW = dimensions.width * 0.5;
-    final halfH = dimensions.height * 0.5;
+    final halfW = dimensions.width * 0.5 / pixelRatio;
+    final halfH = dimensions.height * 0.5 / pixelRatio;
 
-    final fovRad = fov * vm.degrees2Radians;
-    final halfFov = fovRad / 2;
-    final cameraToCenterDist = 0.5 * dimensions.height / math.tan(halfFov);
+    final cameraToCenterDist = _getCameraToCenterDistance(dimensions);
 
     final nearZ = cameraToCenterDist * 0.1;
     final farZ = cameraToCenterDist * 1.1;

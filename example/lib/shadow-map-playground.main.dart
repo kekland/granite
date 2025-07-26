@@ -292,7 +292,6 @@ class LightCamera extends Camera {
     final maxY = lightSpace.map((p) => p.y).reduce(max);
     final minZ = lightSpace.map((p) => p.z).reduce(min);
     final maxZ = lightSpace.map((p) => p.z).reduce(max);
-    print('x: [$minX, $maxX], y: [$minY, $maxY], z: [$minZ, $maxZ]');
 
     final lightProj = _matrix4Orthographic(minX, maxX, minY, maxY, minZ, maxZ);
     return lightProj * lightView;

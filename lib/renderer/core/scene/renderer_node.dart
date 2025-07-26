@@ -111,6 +111,9 @@ final class RendererNode extends scene.Node with ChangeNotifier {
   vm.Matrix4 get lightCameraVp => _lightCameraVp;
   var _lightCameraVp = vm.Matrix4.identity();
 
+  bool get isShadowPass => _isShadowPass;
+  var _isShadowPass = false;
+
   @override
   void render(scene.SceneEncoder encoder, vm.Matrix4 parentWorldTransform) {
     final camera = encoder.camera as MapCamera;
@@ -125,6 +128,7 @@ final class RendererNode extends scene.Node with ChangeNotifier {
 
     // First up - shadow pass.
     // We create a new camera and an encoder, and render everything into that pass.
+    _isShadowPass = true;
     final shadowPassRenderTarget = _shadowPassSurface.getNextRenderTarget(_shadowMapSize, false);
     final lightCamera = LightCamera(mainCamera: camera, direction: vm.Vector3(-lightDirection.x, -lightDirection.y, lightDirection.z));
     final shadowPassEncoder = scene.SceneEncoder(
@@ -137,15 +141,16 @@ final class RendererNode extends scene.Node with ChangeNotifier {
     _lightCameraVp = shadowPassEncoder.cameraTransform;
     super.render(shadowPassEncoder, parentWorldTransform);
     shadowPassEncoder.finish();
+    _isShadowPass = false;
 
     // Finally - forward pass.
     super.render(encoder, parentWorldTransform);
 
-    encoder.encode(
-      vm.Matrix4.identity(),
-      TextureGeometry(renderer: this),
-      TextureMaterial(renderer: this, texture: shadowMapTexture, opacity: 0.0),
-    );
+    // encoder.encode(
+    //   vm.Matrix4.identity(),
+    //   TextureGeometry(renderer: this),
+    //   TextureMaterial(renderer: this, texture: shadowMapTexture, opacity: 0.0),
+    // );
   }
 }
 

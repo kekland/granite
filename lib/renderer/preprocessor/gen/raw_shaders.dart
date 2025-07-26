@@ -6,6 +6,13 @@
 // dart format off
 
 class RawShaders {
+static const String shadow_pass_material_frag = '''
+#version 460 core
+
+void main() {}
+
+''';
+
 static const String texture_frag = '''
 #version 460 core
 
@@ -73,19 +80,36 @@ float prop_interpolate_factor(
 
 uniform sampler2D u_shadow_map;
 
-float get_visibility(vec4 v_frag_pos_light_space, sampler2D u_shadow_map, float bias) {
-  vec3 proj_light_coords = v_frag_pos_light_space.xyz / v_frag_pos_light_space.w;
-  proj_light_coords.x = proj_light_coords.x * 0.5 + 0.5; // convert from [-1, 1] to [0, 1]
-  proj_light_coords.y = proj_light_coords.y * 0.5 + 0.5; // convert from [-1, 1] to [0, 1]
-  proj_light_coords.z = proj_light_coords.z;
+float get_visibility(vec4 v_frag_pos_light_space, sampler2D u_shadow_map) {
+  vec3 proj = v_frag_pos_light_space.xyz / v_frag_pos_light_space.w;
+  if (proj.z <= 0.0 || proj.z >= 1.0) return 1.0;
 
-  float current_depth = proj_light_coords.z;
-  float closest_depth = texture(u_shadow_map, vec2(proj_light_coords.x, 1.0 - proj_light_coords.y)).r;
-  float visibility = current_depth - bias > closest_depth ? 0.0 : 1.0;
-  if (proj_light_coords.z > 1.0) visibility = 1.0;
-  if (proj_light_coords.z < 0.0) visibility = 1.0;
+  vec2 uv = proj.xy * 0.5 + 0.5;
+  uv.y = 1.0 - uv.y;
 
-  return visibility;
+  vec2 texel = 1.0 / vec2(2048);
+
+  // biasing
+  float slope = max(abs(dFdx(proj.z)), abs(dFdy(proj.z)));
+  float min_bias = 0.00195;
+  float slope_scale = 0.0005;
+  float bias = max(min_bias, slope * slope_scale);
+
+  // PCF
+  float result = 0.0;
+  const int K = 1;
+  int taps = 0;
+
+  for (int y = -K; y <= K; ++y)
+  for (int x = -K; x <= K; ++x) {
+      vec2 offset = vec2(x, y) * texel;
+      float closest = texture(u_shadow_map, uv + offset).r;
+      float lit = (proj.z - bias > closest) ? 0.0 : 1.0;
+      result += lit;
+      taps++;
+  }
+
+  return result / float(taps);
 }
 
 #pragma prop: declare(highp vec4 color)
@@ -97,7 +121,7 @@ out highp vec4 f_color;
 
 void main() {
   #pragma prop: resolve
-  float visibility = get_visibility(v_frag_pos_light_space, u_shadow_map, 0.005);
+  float visibility = get_visibility(v_frag_pos_light_space, u_shadow_map);
   visibility = visibility * 0.5 + 0.5;
   f_color = vec4(color.rgb * visibility, color.a) * opacity;
 }
@@ -201,19 +225,36 @@ float prop_interpolate_factor(
 
 uniform sampler2D u_shadow_map;
 
-float get_visibility(vec4 v_frag_pos_light_space, sampler2D u_shadow_map, float bias) {
-  vec3 proj_light_coords = v_frag_pos_light_space.xyz / v_frag_pos_light_space.w;
-  proj_light_coords.x = proj_light_coords.x * 0.5 + 0.5; // convert from [-1, 1] to [0, 1]
-  proj_light_coords.y = proj_light_coords.y * 0.5 + 0.5; // convert from [-1, 1] to [0, 1]
-  proj_light_coords.z = proj_light_coords.z;
+float get_visibility(vec4 v_frag_pos_light_space, sampler2D u_shadow_map) {
+  vec3 proj = v_frag_pos_light_space.xyz / v_frag_pos_light_space.w;
+  if (proj.z <= 0.0 || proj.z >= 1.0) return 1.0;
 
-  float current_depth = proj_light_coords.z;
-  float closest_depth = texture(u_shadow_map, vec2(proj_light_coords.x, 1.0 - proj_light_coords.y)).r;
-  float visibility = current_depth - bias > closest_depth ? 0.0 : 1.0;
-  if (proj_light_coords.z > 1.0) visibility = 1.0;
-  if (proj_light_coords.z < 0.0) visibility = 1.0;
+  vec2 uv = proj.xy * 0.5 + 0.5;
+  uv.y = 1.0 - uv.y;
 
-  return visibility;
+  vec2 texel = 1.0 / vec2(2048);
+
+  // biasing
+  float slope = max(abs(dFdx(proj.z)), abs(dFdy(proj.z)));
+  float min_bias = 0.00195;
+  float slope_scale = 0.0005;
+  float bias = max(min_bias, slope * slope_scale);
+
+  // PCF
+  float result = 0.0;
+  const int K = 1;
+  int taps = 0;
+
+  for (int y = -K; y <= K; ++y)
+  for (int x = -K; x <= K; ++x) {
+      vec2 offset = vec2(x, y) * texel;
+      float closest = texture(u_shadow_map, uv + offset).r;
+      float lit = (proj.z - bias > closest) ? 0.0 : 1.0;
+      result += lit;
+      taps++;
+  }
+
+  return result / float(taps);
 }
 
 #pragma prop: declare(bool antialias)
@@ -227,7 +268,7 @@ out highp vec4 f_color;
 
 void main() {
   #pragma prop: resolve
-  float visibility = get_visibility(v_frag_pos_light_space, u_shadow_map, 0.005);
+  float visibility = get_visibility(v_frag_pos_light_space, u_shadow_map);
   visibility = visibility * 0.5 + 0.5;
   f_color = vec4(color.rgb * visibility, color.a) * opacity;
 }
@@ -307,24 +348,6 @@ static const String fill_extrusion_frag = '''
 
 precision highp float;
 
-layout (std140) uniform TileInfo {
-  // transforms and camera
-  mat4 mvp;
-  mat4 camera_transform;
-  mat4 model_transform;
-  vec3 camera_position;
-
-  // light
-  vec3 light_direction;
-  float light_intensity;
-  vec4 light_color;
-  mat4 light_mvp;
-
-  // other data
-  float units_per_pixel;
-  float zoom;
-} tile_info;
-
 #define prop_crossfade(a, b) mix(a, b, tile_info.zoom - floor(tile_info.zoom))
 
 #define prop_step(start_value, end_value, start_stop, end_stop) \\
@@ -350,21 +373,56 @@ float prop_interpolate_factor(
   else return (pow(base, progress) - 1.0) / (pow(base, difference) - 1.0);
 }
 
+layout (std140) uniform TileInfo {
+  // transforms and camera
+  mat4 mvp;
+  mat4 camera_transform;
+  mat4 model_transform;
+  vec3 camera_position;
+
+  // light
+  vec3 light_direction;
+  float light_intensity;
+  vec4 light_color;
+  mat4 light_mvp;
+
+  // other data
+  float units_per_pixel;
+  float zoom;
+} tile_info;
+
 uniform sampler2D u_shadow_map;
 
-float get_visibility(vec4 v_frag_pos_light_space, sampler2D u_shadow_map, float bias) {
-  vec3 proj_light_coords = v_frag_pos_light_space.xyz / v_frag_pos_light_space.w;
-  proj_light_coords.x = proj_light_coords.x * 0.5 + 0.5; // convert from [-1, 1] to [0, 1]
-  proj_light_coords.y = proj_light_coords.y * 0.5 + 0.5; // convert from [-1, 1] to [0, 1]
-  proj_light_coords.z = proj_light_coords.z;
+float get_visibility(vec4 v_frag_pos_light_space, sampler2D u_shadow_map) {
+  vec3 proj = v_frag_pos_light_space.xyz / v_frag_pos_light_space.w;
+  if (proj.z <= 0.0 || proj.z >= 1.0) return 1.0;
 
-  float current_depth = proj_light_coords.z;
-  float closest_depth = texture(u_shadow_map, vec2(proj_light_coords.x, 1.0 - proj_light_coords.y)).r;
-  float visibility = current_depth - bias > closest_depth ? 0.0 : 1.0;
-  if (proj_light_coords.z > 1.0) visibility = 1.0;
-  if (proj_light_coords.z < 0.0) visibility = 1.0;
+  vec2 uv = proj.xy * 0.5 + 0.5;
+  uv.y = 1.0 - uv.y;
 
-  return visibility;
+  vec2 texel = 1.0 / vec2(2048);
+
+  // biasing
+  float slope = max(abs(dFdx(proj.z)), abs(dFdy(proj.z)));
+  float min_bias = 0.00195;
+  float slope_scale = 0.0005;
+  float bias = max(min_bias, slope * slope_scale);
+
+  // PCF
+  float result = 0.0;
+  const int K = 1;
+  int taps = 0;
+
+  for (int y = -K; y <= K; ++y)
+  for (int x = -K; x <= K; ++x) {
+      vec2 offset = vec2(x, y) * texel;
+      float closest = texture(u_shadow_map, uv + offset).r;
+      float lit = (proj.z - bias > closest) ? 0.0 : 1.0;
+      result += lit;
+      taps++;
+  }
+
+  return result / float(taps);
 }
 
 #pragma prop: declare(highp vec4 color)
@@ -382,8 +440,7 @@ void main() {
   #pragma prop: resolve(...)
 
   // Shadow mapping
-  float bias = max(0.05 * (1.0 - dot(v_normal, tile_info.light_direction)), 0.005);
-  float visibility = get_visibility(v_frag_pos_light_space, u_shadow_map, bias);
+  float visibility = get_visibility(v_frag_pos_light_space, u_shadow_map);
 
   // Lights
   vec3 light_color = tile_info.light_color.rgb;
@@ -397,8 +454,8 @@ void main() {
   vec3 ao = vec3(ao_intensity);
 
   float diffuse_amount = max(dot(v_normal, tile_info.light_direction), 0.0);
-  vec3 ambient = light_color * light_intensity * 1.0 * (visibility * 0.5 + 0.5);
-  vec3 diffuse = light_color * light_intensity * diffuse_amount;
+  vec3 ambient = light_color * light_intensity * 1.0;
+  vec3 diffuse = light_color * light_intensity * diffuse_amount * visibility;
   vec4 light = vec4(ambient + diffuse - ao, 1.0);
 
   vec4 result_color = color * light;
@@ -475,7 +532,7 @@ void main() {
 
   v_position = resolved_pos;
   v_normal = normal;
-  v_frag_pos_light_space = tile_info.light_mvp * vec4(resolved_pos, 1.0);
+  v_frag_pos_light_space = tile_info.light_mvp * vec4(resolved_pos + v_normal * 0.02, 1.0);
   gl_Position = tile_info.mvp * vec4(resolved_pos, 1.0);
 }
 
@@ -511,19 +568,36 @@ float prop_interpolate_factor(
 
 uniform sampler2D u_shadow_map;
 
-float get_visibility(vec4 v_frag_pos_light_space, sampler2D u_shadow_map, float bias) {
-  vec3 proj_light_coords = v_frag_pos_light_space.xyz / v_frag_pos_light_space.w;
-  proj_light_coords.x = proj_light_coords.x * 0.5 + 0.5; // convert from [-1, 1] to [0, 1]
-  proj_light_coords.y = proj_light_coords.y * 0.5 + 0.5; // convert from [-1, 1] to [0, 1]
-  proj_light_coords.z = proj_light_coords.z;
+float get_visibility(vec4 v_frag_pos_light_space, sampler2D u_shadow_map) {
+  vec3 proj = v_frag_pos_light_space.xyz / v_frag_pos_light_space.w;
+  if (proj.z <= 0.0 || proj.z >= 1.0) return 1.0;
 
-  float current_depth = proj_light_coords.z;
-  float closest_depth = texture(u_shadow_map, vec2(proj_light_coords.x, 1.0 - proj_light_coords.y)).r;
-  float visibility = current_depth - bias > closest_depth ? 0.0 : 1.0;
-  if (proj_light_coords.z > 1.0) visibility = 1.0;
-  if (proj_light_coords.z < 0.0) visibility = 1.0;
+  vec2 uv = proj.xy * 0.5 + 0.5;
+  uv.y = 1.0 - uv.y;
 
-  return visibility;
+  vec2 texel = 1.0 / vec2(2048);
+
+  // biasing
+  float slope = max(abs(dFdx(proj.z)), abs(dFdy(proj.z)));
+  float min_bias = 0.00195;
+  float slope_scale = 0.0005;
+  float bias = max(min_bias, slope * slope_scale);
+
+  // PCF
+  float result = 0.0;
+  const int K = 1;
+  int taps = 0;
+
+  for (int y = -K; y <= K; ++y)
+  for (int x = -K; x <= K; ++x) {
+      vec2 offset = vec2(x, y) * texel;
+      float closest = texture(u_shadow_map, uv + offset).r;
+      float lit = (proj.z - bias > closest) ? 0.0 : 1.0;
+      result += lit;
+      taps++;
+  }
+
+  return result / float(taps);
 }
 
 #pragma prop: declare(highp vec4 color)
@@ -536,7 +610,7 @@ out highp vec4 f_color;
 
 void main() {
   #pragma prop: resolve
-  float visibility = get_visibility(v_frag_pos_light_space, u_shadow_map, 0.005);
+  float visibility = get_visibility(v_frag_pos_light_space, u_shadow_map);
   visibility = visibility * 0.5 + 0.5;
   f_color = vec4(color.rgb * visibility, color.a) * opacity;
 }
@@ -609,6 +683,173 @@ void main() {
 
   v_frag_pos_light_space = tile_info.light_mvp * vec4(resolved_pos, 0.0, 1.0);
   gl_Position = tile_info.mvp * vec4(resolved_pos, 0.0, 1.0);
+}
+
+''';
+
+static const String line_dashed_frag = '''
+#version 460 core
+
+#define prop_crossfade(a, b) mix(a, b, tile_info.zoom - floor(tile_info.zoom))
+
+#define prop_step(start_value, end_value, start_stop, end_stop) \\
+  mix(start_value, end_value, step(end_stop, tile_info.zoom))
+
+#define prop_interpolate(start_value, end_value, start_stop, end_stop) \\
+  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile_info.zoom))
+
+#define prop_interpolate_exponential(base, start_value, end_value, start_stop, end_stop) \\
+  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile_info.zoom))
+
+float prop_interpolate_factor(
+  float base,
+  float start_stop,
+  float end_stop,
+  float t
+) {
+  float difference = end_stop - start_stop;
+  float progress = t - start_stop;
+
+  if (difference == 0.0) return 0.0;
+  else if (base == 1.0) return progress / difference;
+  else return (pow(base, progress) - 1.0) / (pow(base, difference) - 1.0);
+}
+
+uniform sampler2D u_shadow_map;
+
+float get_visibility(vec4 v_frag_pos_light_space, sampler2D u_shadow_map) {
+  vec3 proj = v_frag_pos_light_space.xyz / v_frag_pos_light_space.w;
+  if (proj.z <= 0.0 || proj.z >= 1.0) return 1.0;
+
+  vec2 uv = proj.xy * 0.5 + 0.5;
+  uv.y = 1.0 - uv.y;
+
+  vec2 texel = 1.0 / vec2(2048);
+
+  // biasing
+  float slope = max(abs(dFdx(proj.z)), abs(dFdy(proj.z)));
+  float min_bias = 0.00195;
+  float slope_scale = 0.0005;
+  float bias = max(min_bias, slope * slope_scale);
+
+  // PCF
+  float result = 0.0;
+  const int K = 1;
+  int taps = 0;
+
+  for (int y = -K; y <= K; ++y)
+  for (int x = -K; x <= K; ++x) {
+      vec2 offset = vec2(x, y) * texel;
+      float closest = texture(u_shadow_map, uv + offset).r;
+      float lit = (proj.z - bias > closest) ? 0.0 : 1.0;
+      result += lit;
+      taps++;
+  }
+
+  return result / float(taps);
+}
+
+uniform DasharrayInfo {
+  highp vec2 texture_size;
+} dasharray_info;
+
+uniform sampler2D u_dasharray;
+
+#pragma prop: declare(highp vec4 color)
+#pragma prop: declare(float opacity)
+#pragma prop: declare(float width)
+
+in float v_line_length;
+in vec4 v_frag_pos_light_space;
+
+out highp vec4 f_color;
+
+void main() {
+  #pragma prop: resolve
+
+  // Shadows
+  float visibility = get_visibility(v_frag_pos_light_space, u_shadow_map);
+  visibility = visibility * 0.5 + 0.5;
+
+  // Dash pattern
+  float line_position = v_line_length / width;
+  float dash_value = texture(u_dasharray, vec2(line_position / dasharray_info.texture_size.x, 0.5)).r;
+  if (dash_value < 0.5) discard;
+
+  f_color = vec4(color.rgb * visibility, color.a) * opacity;
+}
+
+''';
+
+static const String line_dashed_vert = '''
+#version 460 core
+
+layout (std140) uniform TileInfo {
+  // transforms and camera
+  mat4 mvp;
+  mat4 camera_transform;
+  mat4 model_transform;
+  vec3 camera_position;
+
+  // light
+  vec3 light_direction;
+  float light_intensity;
+  vec4 light_color;
+  mat4 light_mvp;
+
+  // other data
+  float units_per_pixel;
+  float zoom;
+} tile_info;
+
+#define prop_crossfade(a, b) mix(a, b, tile_info.zoom - floor(tile_info.zoom))
+
+#define prop_step(start_value, end_value, start_stop, end_stop) \\
+  mix(start_value, end_value, step(end_stop, tile_info.zoom))
+
+#define prop_interpolate(start_value, end_value, start_stop, end_stop) \\
+  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile_info.zoom))
+
+#define prop_interpolate_exponential(base, start_value, end_value, start_stop, end_stop) \\
+  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile_info.zoom))
+
+float prop_interpolate_factor(
+  float base,
+  float start_stop,
+  float end_stop,
+  float t
+) {
+  float difference = end_stop - start_stop;
+  float progress = t - start_stop;
+
+  if (difference == 0.0) return 0.0;
+  else if (base == 1.0) return progress / difference;
+  else return (pow(base, progress) - 1.0) / (pow(base, difference) - 1.0);
+}
+
+
+in highp vec2 position;
+in highp vec2 normal;
+in highp float line_length;
+
+#pragma prop: declare(highp vec4 color)
+#pragma prop: declare(float opacity)
+#pragma prop: declare(float width)
+
+out float v_line_length;
+out vec4 v_frag_pos_light_space;
+
+void main() {
+  #pragma prop: resolve
+
+  // Width is defined in terms of screen pixels, so we need to convert it.
+  float local_width = width * tile_info.units_per_pixel;
+  vec2 offset = normal * local_width * 0.5;
+  vec2 resolved_pos = position + offset;
+
+  v_frag_pos_light_space = tile_info.light_mvp * vec4(resolved_pos, 0.0, 1.0);
+  gl_Position = tile_info.mvp * vec4(resolved_pos, 0.0, 1.0);
+  v_line_length = line_length / tile_info.units_per_pixel;
 }
 
 ''';

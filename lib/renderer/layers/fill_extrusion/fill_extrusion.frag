@@ -2,8 +2,8 @@
 
 precision highp float;
 
-#pragma prelude: tile-info
 #pragma prelude: interpolation
+#pragma prelude: tile-info
 #pragma prelude: shadow-frag
 
 #pragma prop: declare(highp vec4 color)
@@ -21,8 +21,7 @@ void main() {
   #pragma prop: resolve(...)
 
   // Shadow mapping
-  float bias = max(0.05 * (1.0 - dot(v_normal, tile_info.light_direction)), 0.005);
-  float visibility = get_visibility(v_frag_pos_light_space, u_shadow_map, bias);
+  float visibility = get_visibility(v_frag_pos_light_space, u_shadow_map);
 
   // Lights
   vec3 light_color = tile_info.light_color.rgb;
@@ -36,8 +35,8 @@ void main() {
   vec3 ao = vec3(ao_intensity);
 
   float diffuse_amount = max(dot(v_normal, tile_info.light_direction), 0.0);
-  vec3 ambient = light_color * light_intensity * 1.0 * (visibility * 0.5 + 0.5);
-  vec3 diffuse = light_color * light_intensity * diffuse_amount;
+  vec3 ambient = light_color * light_intensity * 1.0;
+  vec3 diffuse = light_color * light_intensity * diffuse_amount * visibility;
   vec4 light = vec4(ambient + diffuse - ao, 1.0);
 
   vec4 result_color = color * light;

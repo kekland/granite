@@ -110,13 +110,26 @@ List<String> _indentLines(List<String> lines, [int indent = 2]) {
 (String, String)? _getShaderCode(spec.Layer layer) {
   if (!supportedLayers.contains(layer.type)) return null;
 
-  return switch (layer.type) {
-    Layer$Type.background => (RawShaders.background_vert, RawShaders.background_frag),
-    Layer$Type.fill => (RawShaders.fill_vert, RawShaders.fill_frag),
-    Layer$Type.line => (RawShaders.line_vert, RawShaders.line_frag),
-    Layer$Type.fillExtrusion => (RawShaders.fill_extrusion_vert, RawShaders.fill_extrusion_frag),
-    _ => null,
-  };
+  if (layer.type == spec.Layer$Type.background) {
+    return (RawShaders.background_vert, RawShaders.background_frag);
+  }
+  //
+  else if (layer.type == spec.Layer$Type.fill) {
+    return (RawShaders.fill_vert, RawShaders.fill_frag);
+  }
+  //
+  else if (layer.type == spec.Layer$Type.line) {
+    final paint = layer.paint as spec.PaintLine;
+
+    if (paint.lineDasharray != null) return (RawShaders.line_dashed_vert, RawShaders.line_dashed_frag);
+    return (RawShaders.line_vert, RawShaders.line_frag);
+  }
+  //
+  else if (layer.type == spec.Layer$Type.fillExtrusion) {
+    return (RawShaders.fill_extrusion_vert, RawShaders.fill_extrusion_frag);
+  }
+
+  return null;
 }
 
 class LayerPreprocessor {

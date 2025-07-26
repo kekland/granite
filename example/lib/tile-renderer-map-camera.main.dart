@@ -55,20 +55,19 @@ class _TileRendererTestState extends State<TileRendererMapCameraTest> with Ticke
   late final _pT = Tween<double>(begin: 0.0, end: 0.0);
 
   // NYC
-  // late final _latT = Tween<double>(begin: 40.7128, end: 40.7128);
-  // late final _lonT = Tween<double>(begin: -74.0060, end: -74.0060);
-  // late final _zT = Tween<double>(begin: 13.0, end: 13.0);
+  late final _latT = Tween<double>(begin: 40.7128, end: 40.7128);
+  late final _lonT = Tween<double>(begin: -74.0060, end: -74.0060);
+  late final _zT = Tween<double>(begin: 13.0, end: 13.0);
 
   // Milano
-  late final _latT = Tween<double>(begin: 45.4642, end: 45.4642);
-  late final _lonT = Tween<double>(begin: 9.1900, end: 9.1900);
-  late final _zT = Tween<double>(begin: 14.0, end: 14.0);
+  // late final _latT = Tween<double>(begin: 45.4642, end: 45.4642);
+  // late final _lonT = Tween<double>(begin: 9.1900, end: 9.1900);
+  // late final _zT = Tween<double>(begin: 14.0, end: 14.0);
 
   // Almaty
   // late final _latT = Tween<double>(begin: 43.2220, end: 43.2220);
   // late final _lonT = Tween<double>(begin: 76.8512, end: 76.8512);
   // late final _zT = Tween<double>(begin: 14.0, end: 14.0);
-
 
   // late final _latT = Tween<double>(begin: 0, end: 0);
   // late final _lonT = Tween<double>(begin: 0, end: 0);
@@ -249,15 +248,27 @@ class _TileRendererTestState extends State<TileRendererMapCameraTest> with Ticke
           _acP,
           rendererNode,
         ]),
-        builder: (context, _) => CustomPaint(
-          painter: _ScenePainter(
-            scene,
-            LatLng(lat, lon),
-            z,
-            bearing,
-            pitch,
-            MediaQuery.of(context).devicePixelRatio,
-          ),
+        builder: (context, _) => Stack(
+          children: [
+            CustomPaint(
+              painter: _ScenePainter(
+                scene,
+                LatLng(lat, lon),
+                z,
+                bearing,
+                pitch,
+                MediaQuery.of(context).devicePixelRatio,
+              ),
+              child: SizedBox.expand(),
+            ),
+            Center(
+              child: Container(
+                width: 4.0,
+                height: 4.0,
+                color: Colors.red,
+              ),
+            ),
+          ],
         ),
       ),
     );

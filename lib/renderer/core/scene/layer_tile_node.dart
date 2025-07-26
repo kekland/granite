@@ -2,6 +2,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_scene/scene.dart' as scene;
+import 'package:granite/renderer/core/gpu/uniform_utils.dart';
 
 import 'package:granite/renderer/renderer.dart';
 import 'package:granite/renderer/utils/byte_data_utils.dart';
@@ -76,16 +77,16 @@ abstract base class LayerTileNode<TSpec extends spec.Layer, TLayer extends Layer
 
     // mat4, mat4, mat4 vec3, vec3
     final tileInfoData = ByteData(272 + 64);
-    tileInfoData.setMat4(slot.getMemberOffsetInBytes('mvp')!, cameraTransform * modelTransform);
-    tileInfoData.setMat4(slot.getMemberOffsetInBytes('camera_transform')!, cameraTransform);
-    tileInfoData.setMat4(slot.getMemberOffsetInBytes('model_transform')!, modelTransform);
-    tileInfoData.setVec3(slot.getMemberOffsetInBytes('camera_position')!, cameraPosition);
-    tileInfoData.setVec3(slot.getMemberOffsetInBytes('light_direction')!, lightDirection);
-    tileInfoData.setFloat(slot.getMemberOffsetInBytes('light_intensity')!, lightIntensity.toDouble());
-    tileInfoData.setVec4(slot.getMemberOffsetInBytes('light_color')!, lightColor.vec);
-    tileInfoData.setMat4(slot.getMemberOffsetInBytes('light_mvp')!, renderer.lightCameraVp * localTransform);
-    tileInfoData.setFloat(slot.getMemberOffsetInBytes('units_per_pixel')!, unitsPerPixel);
-    tileInfoData.setFloat(slot.getMemberOffsetInBytes('zoom')!, zoom);
+    tileInfoData.setMat4(getUniformMemberOffset(slot, 'mvp')!, cameraTransform * modelTransform);
+    tileInfoData.setMat4(getUniformMemberOffset(slot, 'camera_transform')!, cameraTransform);
+    tileInfoData.setMat4(getUniformMemberOffset(slot, 'model_transform')!, modelTransform);
+    tileInfoData.setVec3(getUniformMemberOffset(slot, 'camera_position')!, cameraPosition);
+    tileInfoData.setVec3(getUniformMemberOffset(slot, 'light_direction')!, lightDirection);
+    tileInfoData.setFloat(getUniformMemberOffset(slot, 'light_intensity')!, lightIntensity.toDouble());
+    tileInfoData.setVec4(getUniformMemberOffset(slot, 'light_color')!, lightColor.vec);
+    tileInfoData.setMat4(getUniformMemberOffset(slot, 'light_mvp')!, renderer.lightCameraVp * localTransform);
+    tileInfoData.setFloat(getUniformMemberOffset(slot, 'units_per_pixel')!, unitsPerPixel);
+    tileInfoData.setFloat(getUniformMemberOffset(slot, 'zoom')!, zoom);
     final view = encoder.transientsBuffer.emplace(tileInfoData);
 
     if (vertexShaderSlot.sizeInBytes != null) encoder.renderPass.bindUniform(vertexShaderSlot, view);

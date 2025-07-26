@@ -48,11 +48,18 @@ class LightCamera extends scene.Camera {
     final maxY = lightSpace.map((p) => p.y).reduce(max);
     final minZ = lightSpace.map((p) => p.z).reduce(min);
     final maxZ = lightSpace.map((p) => p.z).reduce(max);
-    print('x: [$minX, $maxX], y: [$minY, $maxY], z: [$minZ, $maxZ]');
 
-    const padding = 1.33;
-    final lightProj = _matrix4Orthographic(minX * padding, maxX * padding, minY * padding, maxY * padding, minZ, maxZ);
+    const padding = 2.0;
+    final width = (maxX - minX) * padding;
+    final height = (maxY - minY) * padding;
 
+    final texelWorldSize = (maxX - minX) * padding / dimensions.longestSide;
+    final snappedMinX = (minX * padding / texelWorldSize).floor() * texelWorldSize;
+    final snappedMinY = (minY * padding / texelWorldSize).floor() * texelWorldSize;
+    final snappedMaxX = snappedMinX + width;
+    final snappedMaxY = snappedMinY + height;
+
+    final lightProj = _matrix4Orthographic(snappedMinX, snappedMaxX, snappedMinY, snappedMaxY, minZ, maxZ);
     return lightProj * lightView;
   }
 }

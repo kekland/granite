@@ -24,6 +24,6 @@ void main() {
 
   v_position = resolved_pos;
   v_normal = normal;
-  v_frag_pos_light_space = tile_info.light_mvp * vec4(resolved_pos, 1.0);
+  v_frag_pos_light_space = tile_info.light_mvp * vec4(resolved_pos + v_normal * 0.02, 1.0);
   gl_Position = tile_info.mvp * vec4(resolved_pos, 1.0);
 }

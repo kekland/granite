@@ -23,13 +23,33 @@ final class LineLayerTileNode extends LayerTileNode<spec.LayerLine, LineLayerNod
 
   @override
   void setGeometryAndMaterial() {
-    geometry = LineLayerTileGeometry(node: this);
-    material = LineLayerTileMaterial(node: this);
+    if (specLayer.paint.lineDasharray != null) {
+      geometry = LineDashedLayerTileGeometry(node: this);
+      material = LineDashedLayerTileMaterial(node: this);
+    } else {
+      geometry = LineLayerTileGeometry(node: this);
+      material = LineLayerTileMaterial(node: this);
+    }
   }
 }
 
-final class LineLayerTileGeometry extends LayerTileGeometry<LineLayerTileNode> {
+base class LineLayerTileGeometry extends LayerTileGeometry<LineLayerTileNode> {
   LineLayerTileGeometry({required super.node});
+
+  int get staticBytesPerVertex => 16;
+  void _setVertex(
+    ByteData data,
+    int bytesPerVertex,
+    int index, {
+    required vm.Vector2 position,
+    required vm.Vector2 normal,
+    required double lineLength,
+  }) {
+    var offset = index * bytesPerVertex;
+    offset = data.setVec2(offset, position);
+    offset = data.setVec2(offset, normal);
+    offset = data.setByteData(offset, vertexProps.data);
+  }
 
   @override
   Future<void> prepare() async {
@@ -175,18 +195,22 @@ final class LineLayerTileGeometry extends LayerTileGeometry<LineLayerTileNode> {
       }
     }
 
-    const staticBytesPerVertex = 16;
     final bytesPerVertex = staticBytesPerVertex + vertexProps.lengthInBytes;
     final vertexByteData = ByteData(bytesPerVertex * vertexCount);
     void setVertex(
       int index, {
       required vm.Vector2 position,
       required vm.Vector2 normal,
+      required double lineLength,
     }) {
-      var offset = index * bytesPerVertex;
-      offset = vertexByteData.setVec2(offset, position);
-      offset = vertexByteData.setVec2(offset, normal);
-      offset = vertexByteData.setByteData(offset, vertexProps.data);
+      _setVertex(
+        vertexByteData,
+        bytesPerVertex,
+        index,
+        position: position,
+        normal: normal,
+        lineLength: lineLength,
+      );
     }
 
     var vertexIndex = 0;
@@ -196,7 +220,7 @@ final class LineLayerTileGeometry extends LayerTileGeometry<LineLayerTileNode> {
 
       for (var j = 0; j < vertexData[i].length; j++) {
         final (position, normal, lineLength) = vertexData[i][j];
-        setVertex(vertexIndex, position: position, normal: normal);
+        setVertex(vertexIndex, position: position, normal: normal, lineLength: lineLength);
         vertexIndex++;
       }
     }
@@ -210,7 +234,7 @@ final class LineLayerTileGeometry extends LayerTileGeometry<LineLayerTileNode> {
   }
 }
 
-final class LineLayerTileMaterial extends LayerTileMaterial<LineLayerTileNode> {
+base class LineLayerTileMaterial extends LayerTileMaterial<LineLayerTileNode> {
   LineLayerTileMaterial({required super.node});
 
   @override
@@ -218,5 +242,97 @@ final class LineLayerTileMaterial extends LayerTileMaterial<LineLayerTileNode> {
     super.bind(pass, transientsBuffer, environment);
     pass.setDepthWriteEnable(false);
     pass.setDepthCompareOperation(gpu.CompareFunction.always);
+  }
+}
+
+base class LineDashedLayerTileGeometry extends LineLayerTileGeometry {
+  LineDashedLayerTileGeometry({required super.node});
+
+  @override
+  int get staticBytesPerVertex => 20;
+
+  @override
+  void _setVertex(
+    ByteData data,
+    int bytesPerVertex,
+    int index, {
+    required vm.Vector2 position,
+    required vm.Vector2 normal,
+    required double lineLength,
+  }) {
+    var offset = index * bytesPerVertex;
+    offset = data.setVec2(offset, position);
+    offset = data.setVec2(offset, normal);
+    offset = data.setFloat(offset, lineLength);
+    offset = data.setByteData(offset, vertexProps.data);
+  }
+}
+
+base class LineDashedLayerTileMaterial extends LineLayerTileMaterial {
+  LineDashedLayerTileMaterial({required super.node});
+
+  gpu.Texture? dasharrayTexture;
+
+  void _prepareDasharrayTexture() {
+    final paint = node.specLayer.paint;
+
+    // Dasharray evaluation
+    final dasharray = paint.lineDasharray!.evaluate(node.renderer.baseEvaluationContext).map((v) => v * 1).toList();
+    final dasharrayLength = dasharray.fold(0.0, (acc, v) => acc + v);
+    final textureWidth = dasharrayLength.ceil();
+
+    if (dasharrayTexture?.width != textureWidth) {
+      dasharrayTexture = gpu.gpuContext.createTexture(
+        gpu.StorageMode.hostVisible,
+        textureWidth,
+        1,
+        format: gpu.PixelFormat.r8UNormInt,
+        coordinateSystem: gpu.TextureCoordinateSystem.uploadFromHost,
+      );
+    }
+
+    final data = Uint8List(textureWidth);
+    var isGap = false;
+    var offset = 0;
+
+    for (final v in dasharray) {
+      final length = v.round();
+      final value = isGap ? 0 : 255;
+
+      for (var i = offset; i < offset + length; i++) {
+        data[i] = value;
+      }
+
+      offset += length;
+      isGap = !isGap;
+    }
+
+    dasharrayTexture!.overwrite(data.buffer.asByteData());
+  }
+
+  @override
+  void bind(gpu.RenderPass pass, gpu.HostBuffer transientsBuffer, scene.Environment environment) {
+    super.bind(pass, transientsBuffer, environment);
+    _prepareDasharrayTexture();
+
+    final dasharrayTextureSlot = fragmentShader.getUniformSlot('u_dasharray');
+    pass.bindTexture(
+      dasharrayTextureSlot,
+      dasharrayTexture!,
+      sampler: gpu.SamplerOptions(
+        widthAddressMode: gpu.SamplerAddressMode.repeat,
+      ),
+    );
+
+    final dasharrayUboSlot = fragmentShader.getUniformSlot('DasharrayInfo');
+    if (dasharrayUboSlot.sizeInBytes != null) {
+      final dasharrayInfoData = ByteData(dasharrayUboSlot.sizeInBytes!);
+      dasharrayInfoData.setVec2(
+        0,
+        vm.Vector2(dasharrayTexture!.width.toDouble(), dasharrayTexture!.height.toDouble()),
+      );
+
+      pass.bindUniform(dasharrayUboSlot, transientsBuffer.emplace(dasharrayInfoData));
+    }
   }
 }

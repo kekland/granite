@@ -14,7 +14,7 @@ out highp vec4 f_color;
 
 void main() {
   #pragma prop: resolve
-  float visibility = get_visibility(v_frag_pos_light_space, u_shadow_map, 0.005);
+  float visibility = get_visibility(v_frag_pos_light_space, u_shadow_map);
   visibility = visibility * 0.5 + 0.5;
   f_color = vec4(color.rgb * visibility, color.a) * opacity;
 }

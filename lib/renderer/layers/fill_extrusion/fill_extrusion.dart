@@ -4,6 +4,7 @@ import 'package:flutter_gpu/gpu.dart' as gpu;
 import 'package:flutter_scene/scene.dart' as scene;
 import 'package:granite/renderer/core/gpu/customizable_surface.dart';
 import 'package:granite/renderer/renderer.dart';
+import 'package:granite/renderer/shaders/texture.dart';
 import 'package:granite/renderer/utils/byte_data_utils.dart';
 import 'package:granite/renderer/utils/filter_features.dart';
 import 'package:granite/renderer/utils/tessellator.dart';
@@ -23,12 +24,17 @@ final class FillExtrusionLayerNode extends LayerNode<spec.LayerFillExtrusion> {
 
   @override
   void render(scene.SceneEncoder encoder, vm.Matrix4 parentWorldTransform) {
+    super.render(encoder, parentWorldTransform);
+    return;
+
+    // if (renderer.isShadowPass) {}
+
     // final renderTarget = _surface.getNextRenderTarget(encoder.dimensions, true);
 
-    // TODO: Do this in the same encoder and command buffer.
+    // // TODO: Do this in the same encoder and command buffer.
     // final offscreenEncoder = scene.SceneEncoder(renderTarget, encoder.camera, encoder.dimensions, encoder.environment);
 
-    super.render(encoder, parentWorldTransform);
+    // super.render(offscreenEncoder, parentWorldTransform);
     // offscreenEncoder.finish();
 
     // final opacity = specLayer.paint.fillExtrusionOpacity.evaluate(renderer.baseEvaluationContext).toDouble();
@@ -38,7 +44,7 @@ final class FillExtrusionLayerNode extends LayerNode<spec.LayerFillExtrusion> {
     //   TextureMaterial(
     //     renderer: renderer,
     //     texture: renderTarget.colorAttachments.first.resolveTexture!,
-    //     opacity: 1.0,
+    //     opacity: opacity,
     //   ),
     // );
   }

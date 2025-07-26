@@ -1,16 +1,33 @@
 uniform sampler2D u_shadow_map;
 
-float get_visibility(vec4 v_frag_pos_light_space, sampler2D u_shadow_map, float bias) {
-  vec3 proj_light_coords = v_frag_pos_light_space.xyz / v_frag_pos_light_space.w;
-  proj_light_coords.x = proj_light_coords.x * 0.5 + 0.5; // convert from [-1, 1] to [0, 1]
-  proj_light_coords.y = proj_light_coords.y * 0.5 + 0.5; // convert from [-1, 1] to [0, 1]
-  proj_light_coords.z = proj_light_coords.z;
+float get_visibility(vec4 v_frag_pos_light_space, sampler2D u_shadow_map) {
+  vec3 proj = v_frag_pos_light_space.xyz / v_frag_pos_light_space.w;
+  if (proj.z <= 0.0 || proj.z >= 1.0) return 1.0;
 
-  float current_depth = proj_light_coords.z;
-  float closest_depth = texture(u_shadow_map, vec2(proj_light_coords.x, 1.0 - proj_light_coords.y)).r;
-  float visibility = current_depth - bias > closest_depth ? 0.0 : 1.0;
-  if (proj_light_coords.z > 1.0) visibility = 1.0;
-  if (proj_light_coords.z < 0.0) visibility = 1.0;
+  vec2 uv = proj.xy * 0.5 + 0.5;
+  uv.y = 1.0 - uv.y;
 
-  return visibility;
+  vec2 texel = 1.0 / vec2(2048);
+
+  // biasing
+  float slope = max(abs(dFdx(proj.z)), abs(dFdy(proj.z)));
+  float min_bias = 0.00195;
+  float slope_scale = 0.0005;
+  float bias = max(min_bias, slope * slope_scale);
+
+  // PCF
+  float result = 0.0;
+  const int K = 1;
+  int taps = 0;
+
+  for (int y = -K; y <= K; ++y)
+  for (int x = -K; x <= K; ++x) {
+      vec2 offset = vec2(x, y) * texel;
+      float closest = texture(u_shadow_map, uv + offset).r;
+      float lit = (proj.z - bias > closest) ? 0.0 : 1.0;
+      result += lit;
+      taps++;
+  }
+
+  return result / float(taps);
 }
