@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter_scene/scene.dart' as scene;
+import 'package:granite/renderer/core/camera/utils.dart';
 import 'package:granite/renderer/renderer.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:vector_math/vector_math_64.dart' as vm;
@@ -10,18 +11,94 @@ class MapCamera extends scene.Camera {
   MapCamera({
     required this.center,
     required this.zoom,
-    this.pixelRatio = 1.0,
     this.bearing = 0.0,
     this.pitch = 0.0,
     this.fov = 45.0,
   });
 
+  static final zero = MapCamera(center: LatLng(0.0, 0.0), zoom: 0.0, bearing: 0.0, pitch: 0.0, fov: 45.0);
+
   final LatLng center;
   final double zoom;
-  final double pixelRatio;
   final double bearing;
   final double pitch;
   final double fov;
+
+  @override
+  vm.Matrix4 getViewTransform(ui.Size dimensions) => vm.Matrix4.identity();
+
+  @override
+  vm.Vector3 get position => vm.Vector3.zero();
+
+  ResolvedMapCamera resolve(double pixelRatio) => ResolvedMapCamera(
+    center: center,
+    zoom: zoom,
+    bearing: bearing,
+    pitch: pitch,
+    fov: fov,
+    pixelRatio: pixelRatio,
+  );
+
+  MapCamera copyWith({
+    LatLng? center,
+    double? zoom,
+    double? bearing,
+    double? pitch,
+    double? fov,
+  }) {
+    return MapCamera(
+      center: center ?? this.center,
+      zoom: zoom ?? this.zoom,
+      bearing: bearing ?? this.bearing,
+      pitch: pitch ?? this.pitch,
+      fov: fov ?? this.fov,
+    );
+  }
+
+  Set<TileCoordinates> computeVisibleTiles(ui.Size dimensions, {int? zoom}) {
+    // Project NDC to world coordinates
+    final vp = getViewTransform(dimensions);
+    final invVp = vp.clone()..invert();
+    final corners = ndc.map((p) => invVp.transformed(p)).map((p) => p.xyz / p.w).toList();
+    final minX = corners.map((p) => p.x).reduce(math.min);
+    final maxX = corners.map((p) => p.x).reduce(math.max);
+    final minY = corners.map((p) => p.y).reduce(math.min);
+    final maxY = corners.map((p) => p.y).reduce(math.max);
+
+    final _zoom = this.zoom;
+    final z = (zoom ?? _zoom).floor().clamp(0, 1000); // TODO: probably clamp high zoom
+    var tileSize = RendererNode.kTileSize;
+    tileSize *= math.pow(2.0, (_zoom - z));
+
+    final maxRange = math.pow(2, z).toInt() - 1;
+
+    final xMin = (minX / tileSize).floor().clamp(0, maxRange);
+    final xMax = (maxX / tileSize).ceil().clamp(0, maxRange);
+    final yMin = (minY / tileSize).floor().clamp(0, maxRange);
+    final yMax = (maxY / tileSize).ceil().clamp(0, maxRange);
+
+    final visibleTiles = <TileCoordinates>{};
+    for (var x = xMin; x <= xMax; x++) {
+      for (var y = yMin; y <= yMax; y++) {
+        visibleTiles.add(TileCoordinates(x, y, z));
+      }
+    }
+
+    return visibleTiles;
+  }
+}
+
+class ResolvedMapCamera extends MapCamera {
+  ResolvedMapCamera({
+    required super.center,
+    required super.zoom,
+    super.bearing = 0.0,
+    super.pitch = 0.0,
+    super.fov = 45.0,
+    this.pixelRatio = 1.0,
+  });
+
+  final double pixelRatio;
 
   double _getCameraToCenterDistance(ui.Size dimensions) {
     final fovRad = fov * vm.degrees2Radians;
@@ -67,14 +144,14 @@ class MapCamera extends scene.Camera {
     if (!topRayMissesGround) {
       final topHalfSurfaceDistance = math.sin(halfFov) * cameraToCenterDist / math.sin(math.pi - groundAngle - halfFov);
       final furthestDistance = math.cos(math.pi / 2 - pitchRad) * topHalfSurfaceDistance + cameraToCenterDist;
-      farZ = (furthestDistance * 1.01).clamp(0.0, 10000.0);
+      farZ = (furthestDistance * 1.01).clamp(0.0, 10000.0 / pixelRatio);
     } else {
       final double bottomRayAngle = pitchRad - halfFov; // <= π/2
       final double forwardReach = cameraToCenterDist / math.cos(bottomRayAngle);
-      farZ = (forwardReach * 2.0).clamp(0.0, 10000.0);
+      farZ = (forwardReach * 2.0).clamp(0.0, 10000.0 / pixelRatio);
     }
 
-    return _matrix4Perspective(fovRad, dimensions.aspectRatio, 1.0, farZ);
+    return matrix4Perspective(fovRad, dimensions.aspectRatio, 1.0, farZ);
   }
 
   vm.Matrix4 _getOrthographicViewTransform(ui.Size dimensions) {
@@ -86,7 +163,7 @@ class MapCamera extends scene.Camera {
     final nearZ = cameraToCenterDist * 0.1;
     final farZ = cameraToCenterDist * 1.1;
 
-    return _matrix4Orthographic(-halfW, halfW, -halfH, halfH, nearZ, farZ);
+    return matrix4Orthographic(-halfW, halfW, -halfH, halfH, nearZ, farZ);
   }
 
   @override
@@ -96,7 +173,7 @@ class MapCamera extends scene.Camera {
 
     // Interpolate between orthographic and perspective based on pitch
     final t = (pitch / 1.0).clamp(0.0, 1.0);
-    final proj = _lerpMat4(ortho, persp, t);
+    final proj = lerpMatrix4(ortho, persp, t);
     final view = _getViewMatrix(dimensions);
 
     return proj * view;
@@ -107,111 +184,4 @@ class MapCamera extends scene.Camera {
     // Unused.
     return vm.Vector3(0.0, 0.0, 0.0);
   }
-}
-
-vm.Matrix4 _matrix4Perspective(
-  double fovRadiansY,
-  double aspectRatio,
-  double zNear,
-  double zFar,
-) {
-  double height = math.tan(fovRadiansY * 0.5);
-  double width = height * aspectRatio;
-
-  return vm.Matrix4(
-    1.0 / width,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    1.0 / height,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    zFar / (zFar - zNear),
-    1.0,
-    0.0,
-    0.0,
-    -(zFar * zNear) / (zFar - zNear),
-    0.0,
-  );
-}
-
-vm.Matrix4 _matrix4Orthographic(
-  double left,
-  double right,
-  double bottom,
-  double top,
-  double zNear,
-  double zFar,
-) {
-  final double dx = right - left;
-  final double dy = top - bottom;
-  final double dz = zFar - zNear;
-
-  return vm.Matrix4(
-    2.0 / dx,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    2.0 / dy,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    1.0 / dz,
-    0.0,
-    -(right + left) / dx,
-    -(top + bottom) / dy,
-    -zNear / dz,
-    1.0,
-  );
-}
-
-vm.Matrix4 _matrix4LookAt(vm.Vector3 position, vm.Vector3 target, vm.Vector3 up) {
-  vm.Vector3 forward = (target - position).normalized();
-  vm.Vector3 right = up.cross(forward).normalized();
-  up = forward.cross(right).normalized();
-
-  return vm.Matrix4(
-    right.x,
-    up.x,
-    forward.x,
-    0.0, //
-    right.y,
-    up.y,
-    forward.y,
-    0.0, //
-    right.z,
-    up.z,
-    forward.z,
-    0.0, //
-    -right.dot(position),
-    -up.dot(position),
-    -forward.dot(position),
-    1.0, //
-  );
-}
-
-vm.Matrix4 _lerpMat4(vm.Matrix4 a, vm.Matrix4 b, double t) {
-  return vm.Matrix4(
-    ui.lerpDouble(a[0], b[0], t)!,
-    ui.lerpDouble(a[1], b[1], t)!,
-    ui.lerpDouble(a[2], b[2], t)!,
-    ui.lerpDouble(a[3], b[3], t)!,
-    ui.lerpDouble(a[4], b[4], t)!,
-    ui.lerpDouble(a[5], b[5], t)!,
-    ui.lerpDouble(a[6], b[6], t)!,
-    ui.lerpDouble(a[7], b[7], t)!,
-    ui.lerpDouble(a[8], b[8], t)!,
-    ui.lerpDouble(a[9], b[9], t)!,
-    ui.lerpDouble(a[10], b[10], t)!,
-    ui.lerpDouble(a[11], b[11], t)!,
-    ui.lerpDouble(a[12], b[12], t)!,
-    ui.lerpDouble(a[13], b[13], t)!,
-    ui.lerpDouble(a[14], b[14], t)!,
-    ui.lerpDouble(a[15], b[15], t)!,
-  );
 }

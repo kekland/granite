@@ -152,8 +152,8 @@ class _TileRendererTestState extends State<TileRendererTest> with TickerProvider
 
       for (var j = _xmi; j <= _xma; j++) {
         for (var k = _ymi; k <= _yma; k++) {
-          loadVectorTile(z, j, k).then((t) => rendererNode.addTile(TileCoordinates(j, k, z), t));
-          print('added tile: z=$z, x=$j, y=$k');
+          // loadVectorTile(z, j, k).then((t) => rendererNode.addTile(TileCoordinates(j, k, z), t));
+          // print('added tile: z=$z, x=$j, y=$k');
         }
       }
 

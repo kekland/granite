@@ -20,6 +20,7 @@ dependencies:
   vector_math: ^2.2.0
   dart_earcut: ^1.2.0
   latlong2: ^0.9.1
+  http: ^1.4.0
 
   # spec
   intl: ^0.20.2

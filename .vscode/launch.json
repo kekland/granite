@@ -16,10 +16,21 @@
       ]
     },
     {
-      "name": "example/tile-renderer-map-camera",
+      "name": "example",
       "cwd": "example",
       "request": "launch",
-      "program": "lib/tile-renderer-map-camera.main.dart",
+      "program": "lib/main.dart",
+      "type": "dart",
+      "args": [
+        "--enable-impeller",
+        "--enable-flutter-gpu",
+      ]
+    },
+    {
+      "name": "example/gestures",
+      "cwd": "example",
+      "request": "launch",
+      "program": "lib/gestures.main.dart",
       "type": "dart",
       "args": [
         "--enable-impeller",

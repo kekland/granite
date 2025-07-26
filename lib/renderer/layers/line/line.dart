@@ -1,3 +1,5 @@
+import 'dart:developer';
+import 'dart:isolate';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
@@ -14,48 +16,36 @@ final class LineLayerNode extends LayerNode<spec.LayerLine> {
   LineLayerNode({required super.specLayer, required super.preprocessedLayer});
 
   @override
-  LayerTileNode createLayerTileNode(TileCoordinates coordinates, vt.Layer vtLayer) =>
-      LineLayerTileNode(coordinates: coordinates, vtLayer: vtLayer);
+  LayerTileNode createLayerTileNode(TileCoordinates coordinates, GeometryData? geometryData) =>
+      LineLayerTileNode(coordinates: coordinates, geometryData: geometryData);
 }
 
 final class LineLayerTileNode extends LayerTileNode<spec.LayerLine, LineLayerNode> {
-  LineLayerTileNode({required super.coordinates, required super.vtLayer});
+  LineLayerTileNode({required super.coordinates, required super.geometryData});
 
   @override
   void setGeometryAndMaterial() {
     if (specLayer.paint.lineDasharray != null) {
-      geometry = LineDashedLayerTileGeometry(node: this);
+      geometry = LineDashedLayerTileGeometry(node: this, geometryData: geometryData);
       material = LineDashedLayerTileMaterial(node: this);
     } else {
-      geometry = LineLayerTileGeometry(node: this);
+      geometry = LineLayerTileGeometry(node: this, geometryData: geometryData);
       material = LineLayerTileMaterial(node: this);
     }
   }
 }
 
 base class LineLayerTileGeometry extends LayerTileGeometry<LineLayerTileNode> {
-  LineLayerTileGeometry({required super.node});
+  LineLayerTileGeometry({required super.node, required super.geometryData});
 
-  int get staticBytesPerVertex => 16;
-  void _setVertex(
-    ByteData data,
-    int bytesPerVertex,
-    int index, {
-    required vm.Vector2 position,
-    required vm.Vector2 normal,
-    required double lineLength,
+  static GeometryData? prepareGeometry({
+    required spec.EvaluationContext evalContext,
+    required spec.LayerLine specLayer,
+    required vt.Layer vtLayer,
+    required VertexProps vertexProps,
   }) {
-    var offset = index * bytesPerVertex;
-    offset = data.setVec2(offset, position);
-    offset = data.setVec2(offset, normal);
-    offset = data.setByteData(offset, vertexProps.data);
-  }
-
-  @override
-  Future<void> prepare() async {
-    final vtLayer = node.vtLayer;
-    final specLayer = node.specLayer;
-    final evalContext = renderer.baseEvaluationContext.copyWithZoom(node.coordinates.z.toDouble());
+    final isDasharray = specLayer.paint.lineDasharray != null;
+    final staticBytesPerVertex = isDasharray ? 20 : 16;
 
     final features = filterFeatures<vt.LineStringFeature>(
       vtLayer,
@@ -64,10 +54,7 @@ base class LineLayerTileGeometry extends LayerTileGeometry<LineLayerTileNode> {
       sortKey: specLayer.layout.lineSortKey,
     );
 
-    if (features.isEmpty) {
-      isEmpty = true;
-      return;
-    }
+    if (features.isEmpty) return null;
 
     // TODO: this has to be evaluated per-feature.
     final lineCap = specLayer.layout.lineCap.evaluate(evalContext);
@@ -179,17 +166,17 @@ base class LineLayerTileGeometry extends LayerTileGeometry<LineLayerTileNode> {
       for (final line in feature.lines) {
         if (line.points.length < 2) continue;
 
-        _addCap(line.points[0], line.points[1]);
+        // _addCap(line.points[0], line.points[1]);
 
         for (var i = 0; i < line.points.length - 1; i++) {
           if (i != 0) {
-            _addJoin(line.points[i], line.points[i - 1], line.points[i + 1]);
+            // _addJoin(line.points[i], line.points[i - 1], line.points[i + 1]);
           }
 
           _addSegment(line.points[i], line.points[i + 1]);
         }
 
-        _addCap(line.points[line.points.length - 1], line.points[line.points.length - 2]);
+        // _addCap(line.points[line.points.length - 1], line.points[line.points.length - 2]);
 
         currentLength = 0.0;
       }
@@ -197,6 +184,7 @@ base class LineLayerTileGeometry extends LayerTileGeometry<LineLayerTileNode> {
 
     final bytesPerVertex = staticBytesPerVertex + vertexProps.lengthInBytes;
     final vertexByteData = ByteData(bytesPerVertex * vertexCount);
+    final _setVertex = isDasharray ? LineDashedLayerTileGeometry._setVertex : LineLayerTileGeometry._setVertex;
     void setVertex(
       int index, {
       required vm.Vector2 position,
@@ -210,6 +198,7 @@ base class LineLayerTileGeometry extends LayerTileGeometry<LineLayerTileNode> {
         position: position,
         normal: normal,
         lineLength: lineLength,
+        vertexProps: vertexProps,
       );
     }
 
@@ -225,10 +214,41 @@ base class LineLayerTileGeometry extends LayerTileGeometry<LineLayerTileNode> {
       }
     }
 
+    final floatdata = vertexByteData.buffer.asFloat32List();
+
+    return GeometryData(
+      vertexData: TransferableTypedData.fromList([vertexByteData]),
+      vertexCount: vertexCount,
+      indexData: TransferableTypedData.fromList([Uint32List.fromList(indices)]),
+    );
+  }
+
+  static void _setVertex(
+    ByteData data,
+    int bytesPerVertex,
+    int index, {
+    required vm.Vector2 position,
+    required vm.Vector2 normal,
+    required double lineLength,
+    required VertexProps vertexProps,
+  }) {
+    var offset = index * bytesPerVertex;
+    offset = data.setVec2(offset, position);
+    offset = data.setVec2(offset, normal);
+    offset = data.setByteData(offset, vertexProps.data);
+  }
+
+  @override
+  void prepare() {
+    if (geometryData == null) {
+      isEmpty = true;
+      return;
+    }
+
     uploadVertexData(
-      vertexByteData,
-      vertexCount,
-      Uint32List.fromList(indices).buffer.asByteData(),
+      geometryData!.vertexData.materialize().asByteData(),
+      geometryData!.vertexCount,
+      geometryData!.indexData.materialize().asByteData(),
       indexType: gpu.IndexType.int32,
     );
   }
@@ -246,19 +266,16 @@ base class LineLayerTileMaterial extends LayerTileMaterial<LineLayerTileNode> {
 }
 
 base class LineDashedLayerTileGeometry extends LineLayerTileGeometry {
-  LineDashedLayerTileGeometry({required super.node});
+  LineDashedLayerTileGeometry({required super.node, required super.geometryData});
 
-  @override
-  int get staticBytesPerVertex => 20;
-
-  @override
-  void _setVertex(
+  static void _setVertex(
     ByteData data,
     int bytesPerVertex,
     int index, {
     required vm.Vector2 position,
     required vm.Vector2 normal,
     required double lineLength,
+    required VertexProps vertexProps,
   }) {
     var offset = index * bytesPerVertex;
     offset = data.setVec2(offset, position);

@@ -1,12 +1,17 @@
+import 'dart:isolate';
 import 'dart:math';
 import 'dart:ui' as ui;
 
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_gpu/gpu.dart' as gpu;
 import 'package:flutter_scene/scene.dart' as scene;
 import 'package:granite/renderer/core/camera/light_camera.dart';
 import 'package:granite/renderer/core/camera/map_camera.dart';
 import 'package:granite/renderer/core/gpu/customizable_surface.dart';
+import 'package:granite/renderer/core/gpu/stencil_ref_buffer.dart';
+import 'package:granite/renderer/core/scene/tile_stencil_node.dart';
+import 'package:granite/renderer/isolates/isolates.dart';
 import 'package:granite/renderer/shaders/texture.dart';
 import 'package:granite/spec/spec.dart' as spec;
 
@@ -34,13 +39,16 @@ final class RendererNode extends scene.Node with ChangeNotifier {
   late PreprocessedStyle _preprocessedStyle;
   PreprocessedStyle get preprocessedStyle => _preprocessedStyle;
 
+  late List<PreprocessedLayer> _preprocessedLayers;
+  List<PreprocessedLayer> get preprocessedLayers => _preprocessedLayers;
+
   spec.EvaluationContext get baseEvaluationContext => _evalContext;
   var _evalContext = spec.EvaluationContext.empty();
 
   gpu.Shader? getShader(String name) => shaderLibraryProvider[name];
 
-  /// The tile size.
   static const double kTileSize = 512.0;
+  static const int kTileExtent = 4096;
 
   double get pixelRatio => 2.0;
 
@@ -55,7 +63,10 @@ final class RendererNode extends scene.Node with ChangeNotifier {
 
   /// Initializes this renderer and prepares its children.
   void initialize() {
+    isolates.spawn();
+
     _preprocessedStyle = StylePreprocessor.preprocess(style);
+    _preprocessedLayers = _preprocessedStyle.layers.nonNulls.toList();
     for (var i = 0; i < _preprocessedStyle.layers.length; i++) {
       final specLayer = style.layers[i];
       final preprocessedLayer = _preprocessedStyle.layers[i];
@@ -65,6 +76,8 @@ final class RendererNode extends scene.Node with ChangeNotifier {
     }
   }
 
+  final isolates = Isolates();
+
   /// Reassemble can be used to completely rebuild the node and its children.
   ///
   /// This can be called when hot-reloading shaders or styles.
@@ -73,33 +86,54 @@ final class RendererNode extends scene.Node with ChangeNotifier {
     removeAll();
     initialize();
 
-    // If count of layers is mismatched, we cannot reassemble correctly.
-    if (oldChildren.length != children.length) return;
+    // TODO: do this later.
+    // // If count of layers is mismatched, we cannot reassemble correctly.
+    // if (oldChildren.length != children.length) return;
 
-    // Collect old layer data.
-    final oldLayers = <TileCoordinates, List<vt.Layer>>{};
-    for (final oldLayer in oldChildren) {
-      for (final tile in oldLayer.children.whereType<LayerTileNode>()) {
-        final coordinates = tile.coordinates;
-        final vtLayer = tile.vtLayer;
+    // // Collect old layer data.
+    // final oldTiles = <TileCoordinates, Uint8List>{};
+    // for (final oldLayer in oldChildren) {
+    //   for (final tile in oldLayer.children.whereType<LayerTileNode>()) {
+    //     final coordinates = tile.coordinates;
+    //     final vtData = tile.vtData;
+    //     oldTiles[coordinates] = vtData;
+    //   }
+    // }
 
-        oldLayers[coordinates] ??= [];
-        oldLayers[coordinates]!.add(vtLayer);
-      }
-    }
+    // // Assemble new layers into tiles and add them to the new children.
+    // for (final MapEntry(key: coords, value: vtData) in oldTiles.entries) {
+    //   addTile(coords, vtData);
+    // }
+  }
 
-    // Assemble new layers into tiles and add them to the new children.
-    final tiles = oldLayers.map((k, v) => MapEntry(k, vt.Tile(layers: v)));
-    for (final layer in children) {
-      for (final e in tiles.entries) {
-        layer.addTile(e.key, e.value);
-      }
+  Future<List<GeometryData?>> computeTileGeometryDatas(TileCoordinates coords, Uint8List vtData) async {
+    return isolates.layerTileGeometry.execute((
+      evalContext: baseEvaluationContext.copyWithZoom(coords.z.toDouble()),
+      preprocessedLayers: _preprocessedLayers,
+      style: style,
+      vtData: TransferableTypedData.fromList([vtData]),
+    ));
+  }
+
+  final _stencilRefBuffer = StencilRefBuffer();
+  final _tileStencilRefs = <TileCoordinates, int>{};
+  int getTileStencilRef(TileCoordinates coords) => _tileStencilRefs[coords]!;
+
+  Future<void> addTile(TileCoordinates coords, List<GeometryData?> geometryDatas) async {
+    _tileStencilRefs[coords] = _stencilRefBuffer.allocate();
+    for (var i = 0; i < geometryDatas.length; i++) {
+      final layer = children[i];
+      final geometryData = geometryDatas[i];
+      layer.addTile(coords, geometryData);
     }
   }
 
-  void addTile(TileCoordinates coordinates, vt.Tile tile) {
+  void removeTile(TileCoordinates coords) {
+    final value = _tileStencilRefs.remove(coords)!;
+    _stencilRefBuffer.deallocate(value);
+
     for (final layer in children) {
-      layer.addTile(coordinates, tile);
+      layer.removeTile(coords);
     }
   }
 
@@ -114,10 +148,15 @@ final class RendererNode extends scene.Node with ChangeNotifier {
   bool get isShadowPass => _isShadowPass;
   var _isShadowPass = false;
 
-  @override
-  void render(scene.SceneEncoder encoder, vm.Matrix4 parentWorldTransform) {
-    final camera = encoder.camera as MapCamera;
-    _evalContext = _evalContext.copyWithZoom(camera.zoom);
+  List<TileCoordinates> get tileCoordinates => children
+      .expand((l) => l.children)
+      .map((v) => v.coordinates)
+      .toSet()
+      .toList()
+      .sorted((a, b) => a.z.compareTo(b.z));
+
+  void _performShadowPass(scene.Camera mainCamera, vm.Matrix4 parentWorldTransform) {
+    _isShadowPass = true;
 
     // Compute light
     final light = style.light ?? spec.Light.withDefaults();
@@ -128,9 +167,11 @@ final class RendererNode extends scene.Node with ChangeNotifier {
 
     // First up - shadow pass.
     // We create a new camera and an encoder, and render everything into that pass.
-    _isShadowPass = true;
     final shadowPassRenderTarget = _shadowPassSurface.getNextRenderTarget(_shadowMapSize, false);
-    final lightCamera = LightCamera(mainCamera: camera, direction: vm.Vector3(-lightDirection.x, -lightDirection.y, lightDirection.z));
+    final lightCamera = LightCamera(
+      mainCamera: mainCamera,
+      direction: vm.Vector3(-lightDirection.x, -lightDirection.y, lightDirection.z),
+    );
     final shadowPassEncoder = scene.SceneEncoder(
       shadowPassRenderTarget,
       lightCamera,
@@ -139,17 +180,46 @@ final class RendererNode extends scene.Node with ChangeNotifier {
     );
 
     _lightCameraVp = shadowPassEncoder.cameraTransform;
-    super.render(shadowPassEncoder, parentWorldTransform);
+
+    for (final c in children.whereType<FillExtrusionLayerNode>()) {
+      c.render(shadowPassEncoder, parentWorldTransform);
+    }
+
     shadowPassEncoder.finish();
     _isShadowPass = false;
+  }
 
-    // Finally - forward pass.
+  void _performStencilPass(scene.SceneEncoder encoder, vm.Matrix4 parentWorldTransform) {
+    for (final c in tileCoordinates) {
+      final stencilNode = TileStencilNode(renderer: this, coordinates: c);
+      stencilNode.render(encoder, parentWorldTransform);
+    }
+  }
+
+  void _performForwardPass(scene.SceneEncoder encoder, vm.Matrix4 parentWorldTransform) {
     super.render(encoder, parentWorldTransform);
+  }
+
+  ui.Size get lastDimensions => _lastDimensions;
+  late ui.Size _lastDimensions;
+
+  @override
+  void render(scene.SceneEncoder encoder, vm.Matrix4 parentWorldTransform) {
+    final camera = encoder.camera as ResolvedMapCamera;
+    _evalContext = _evalContext.copyWithZoom(camera.zoom);
+    _lastDimensions = encoder.dimensions;
+
+    _performShadowPass(camera, parentWorldTransform);
+    _performStencilPass(encoder, parentWorldTransform);
+    _performForwardPass(encoder, parentWorldTransform);
+
+    // final stencilTexture = encoder.renderTarget.depthStencilAttachment!.texture;
+    // final stencilImage = stencilTexture.asImage();
 
     // encoder.encode(
     //   vm.Matrix4.identity(),
     //   TextureGeometry(renderer: this),
-    //   TextureMaterial(renderer: this, texture: shadowMapTexture, opacity: 0.0),
+    //   TextureMaterial(renderer: this, texture: stencilTexture, opacity: 0.5),
     // );
   }
 }
@@ -179,21 +249,5 @@ base mixin RendererDescendantNode on scene.Node {
   void detach() {
     _renderer = null;
     super.detach();
-  }
-}
-
-/// A mixin for objects that need to be prepared before rendering.
-base mixin Preparable {
-  bool _isReady = false;
-  bool get isReady => _isReady;
-
-  Future<void> prepare() async {
-    if (_isReady) return;
-    await prepareImpl();
-    _isReady = true;
-  }
-
-  Future<void> prepareImpl() async {
-    // No-op by default.
   }
 }

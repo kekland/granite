@@ -1,3 +1,4 @@
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:flutter_gpu/gpu.dart' as gpu;
@@ -19,8 +20,8 @@ final class FillExtrusionLayerNode extends LayerNode<spec.LayerFillExtrusion> {
   final _surface = CustomizableSurface();
 
   @override
-  LayerTileNode createLayerTileNode(TileCoordinates coordinates, vt.Layer vtLayer) =>
-      FillExtrusionLayerTileNode(coordinates: coordinates, vtLayer: vtLayer);
+  LayerTileNode createLayerTileNode(TileCoordinates coordinates, GeometryData? geometryData) =>
+      FillExtrusionLayerTileNode(coordinates: coordinates, geometryData: geometryData);
 
   @override
   void render(scene.SceneEncoder encoder, vm.Matrix4 parentWorldTransform) {
@@ -51,24 +52,30 @@ final class FillExtrusionLayerNode extends LayerNode<spec.LayerFillExtrusion> {
 }
 
 final class FillExtrusionLayerTileNode extends LayerTileNode<spec.LayerFillExtrusion, FillExtrusionLayerNode> {
-  FillExtrusionLayerTileNode({required super.coordinates, required super.vtLayer});
+  FillExtrusionLayerTileNode({required super.coordinates, required super.geometryData});
 
   @override
   void setGeometryAndMaterial() {
-    geometry = FillExtrusionLayerTileGeometry(node: this);
+    geometry = FillExtrusionLayerTileGeometry(node: this, geometryData: geometryData);
     material = FillExtrusionLayerTileMaterial(node: this);
   }
+
+  @override
+  bool get isClipped => false;
 }
 
 final class FillExtrusionLayerTileGeometry extends LayerTileGeometry<FillExtrusionLayerTileNode> {
-  FillExtrusionLayerTileGeometry({required super.node});
+  FillExtrusionLayerTileGeometry({required super.node, required super.geometryData});
 
-  @override
-  Future<void> prepare() async {
-    final evalContext = renderer.baseEvaluationContext.copyWithZoom(node.coordinates.z.toDouble());
+  static GeometryData? prepareGeometry({
+    required spec.EvaluationContext evalContext,
+    required spec.LayerFillExtrusion specLayer,
+    required vt.Layer vtLayer,
+    required VertexProps vertexProps,
+  }) {
     final features = filterFeatures<vt.PolygonFeature>(
-      node.vtLayer,
-      node.specLayer,
+      vtLayer,
+      specLayer,
       evalContext,
     );
 
@@ -79,10 +86,7 @@ final class FillExtrusionLayerTileGeometry extends LayerTileGeometry<FillExtrusi
       for (final polygon in feature.polygons) vertexCount += polygon.vertexCount;
     }
 
-    if (vertexCount == 0) {
-      isEmpty = true;
-      return;
-    }
+    if (vertexCount == 0) return null;
 
     const staticBytesPerVertex = 24;
     final bytesPerVertex = staticBytesPerVertex + vertexProps.lengthInBytes;
@@ -100,7 +104,7 @@ final class FillExtrusionLayerTileGeometry extends LayerTileGeometry<FillExtrusi
 
     var vertexIndex = 0;
     for (final feature in features) {
-      vertexProps.compute(evalContext.forFeature(feature), node.specLayer);
+      vertexProps.compute(evalContext.forFeature(feature), specLayer);
       final polygons = feature.polygons;
 
       for (final polygon in polygons) {
@@ -175,10 +179,24 @@ final class FillExtrusionLayerTileGeometry extends LayerTileGeometry<FillExtrusi
       }
     }
 
+    return GeometryData(
+      vertexData: TransferableTypedData.fromList([vertexData.buffer.asUint8List()]),
+      vertexCount: vertexCount * 6,
+      indexData: TransferableTypedData.fromList([Uint32List.fromList(indicesList)]),
+    );
+  }
+
+  @override
+  Future<void> prepare() async {
+    if (geometryData == null) {
+      isEmpty = true;
+      return;
+    }
+
     uploadVertexData(
-      vertexData,
-      vertexCount,
-      Uint32List.fromList(indicesList).buffer.asByteData(),
+      geometryData!.vertexData.materialize().asByteData(),
+      geometryData!.vertexCount,
+      geometryData!.indexData.materialize().asByteData(),
       indexType: gpu.IndexType.int32,
     );
   }

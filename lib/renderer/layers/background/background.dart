@@ -1,31 +1,22 @@
 import 'dart:typed_data';
-import 'dart:ui';
 
 import 'package:flutter_gpu/gpu.dart' as gpu;
 import 'package:flutter_scene/scene.dart' as scene;
 import 'package:granite/renderer/renderer.dart';
 import 'package:granite/renderer/utils/byte_data_utils.dart';
 import 'package:granite/spec/spec.dart' as spec;
-import 'package:granite/vector_tile/vector_tile.dart' as vt;
 import 'package:vector_math/vector_math_64.dart' as vm;
 
 final class BackgroundLayerNode extends LayerNode<spec.LayerBackground> {
   BackgroundLayerNode({required super.specLayer, required super.preprocessedLayer});
 
   @override
-  void addTile(TileCoordinates coordinates, vt.Tile tile) {
-    // Background layer does not use vector tile data, so we can just pass an empty layer.
-    final layerTileNode = createLayerTileNode(coordinates, vt.Layer.empty);
-    add(layerTileNode);
-  }
-
-  @override
-  LayerTileNode createLayerTileNode(TileCoordinates coordinates, vt.Layer vtLayer) =>
-      BackgroundLayerTileNode(coordinates: coordinates, vtLayer: vtLayer);
+  LayerTileNode createLayerTileNode(TileCoordinates coordinates, GeometryData? geometryData) =>
+      BackgroundLayerTileNode(coordinates: coordinates, geometryData: geometryData);
 }
 
 final class BackgroundLayerTileNode extends LayerTileNode<spec.LayerBackground, BackgroundLayerNode> {
-  BackgroundLayerTileNode({required super.coordinates, required super.vtLayer});
+  BackgroundLayerTileNode({required super.coordinates, required super.geometryData});
 
   @override
   void setGeometryAndMaterial() {
@@ -35,10 +26,10 @@ final class BackgroundLayerTileNode extends LayerTileNode<spec.LayerBackground, 
 }
 
 final class BackgroundLayerTileGeometry extends LayerTileGeometry<BackgroundLayerTileNode> {
-  BackgroundLayerTileGeometry({required super.node});
+  BackgroundLayerTileGeometry({required super.node}) : super(geometryData: null);
 
   @override
-  Future<void> prepare() async {
+  void prepare() {
     const staticBytesPerVertex = 8;
     final bytesPerVertex = staticBytesPerVertex + vertexProps.lengthInBytes;
 
@@ -52,10 +43,12 @@ final class BackgroundLayerTileGeometry extends LayerTileGeometry<BackgroundLaye
       offset = vertexData.setByteData(offset, vertexProps.data);
     }
 
+    final extent = RendererNode.kTileExtent.toDouble();
+
     setVertex(0, position: vm.Vector2(0.0, 0.0));
-    setVertex(1, position: vm.Vector2(1.0, 0.0));
-    setVertex(2, position: vm.Vector2(1.0, 1.0));
-    setVertex(3, position: vm.Vector2(0.0, 1.0));
+    setVertex(1, position: vm.Vector2(extent, 0.0));
+    setVertex(2, position: vm.Vector2(extent, extent));
+    setVertex(3, position: vm.Vector2(0.0, extent));
 
     uploadVertexData(
       vertexData,

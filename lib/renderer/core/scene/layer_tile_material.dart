@@ -2,7 +2,7 @@ import 'package:flutter_gpu/gpu.dart' as gpu;
 import 'package:flutter_scene/scene.dart' as scene;
 import 'package:granite/renderer/renderer.dart';
 
-abstract base class LayerTileMaterial<TNode extends LayerTileNode> extends scene.Material with Preparable {
+abstract base class LayerTileMaterial<TNode extends LayerTileNode> extends scene.Material {
   LayerTileMaterial({required this.node}) {
     setFragmentShader(node.parent.fragmentShader);
   }

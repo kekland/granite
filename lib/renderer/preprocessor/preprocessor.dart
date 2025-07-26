@@ -21,7 +21,8 @@ class StylePreprocessor {
       genericShaders: {
         'texture-vert': RawShaders.texture_vert,
         'texture-frag': RawShaders.texture_frag,
-        'shadow_pass_material-frag': RawShaders.shadow_pass_material_frag,
+        'empty-material-frag': RawShaders.empty_material_frag,
+        'tile-stencil-vert': RawShaders.tile_stencil_vert,
       },
     );
   }

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:collection/collection.dart';
 import 'package:flutter_gpu/gpu.dart' as gpu;
 import 'package:flutter_scene/scene.dart' as scene;
@@ -20,20 +22,20 @@ abstract base class LayerNode<TSpec extends spec.Layer> extends scene.Node with 
   late final pipeline = gpu.gpuContext.createRenderPipeline(vertexShader, fragmentShader);
   late final shadowPassPipeline = gpu.gpuContext.createRenderPipeline(
     vertexShader,
-    renderer.getShader('shadow_pass_material-frag')!,
+    renderer.getShader('empty-material-frag')!,
   );
   late final vertexProps = VertexProps(instructions: preprocessedLayer.vertexPropInstructions);
   late final uniformProps = UniformProps(instructions: preprocessedLayer.uniformPropInstructions);
 
-  LayerTileNode createLayerTileNode(TileCoordinates coordinates, vt.Layer vtLayer);
+  LayerTileNode createLayerTileNode(TileCoordinates coordinates, GeometryData? geometryData);
 
-  void addTile(TileCoordinates coordinates, vt.Tile tile) {
-    final sourceLayerName = specLayer.sourceLayer;
-    final vtLayer = tile.layers.firstWhereOrNull((data) => data.name == sourceLayerName);
-    if (vtLayer == null) return;
-
-    final layerTileNode = createLayerTileNode(coordinates, vtLayer);
+  void addTile(TileCoordinates coords, GeometryData? geometryData) {
+    final layerTileNode = createLayerTileNode(coords, geometryData);
     add(layerTileNode);
+  }
+
+  void removeTile(TileCoordinates coords) {
+    children.removeWhere((v) => v.coordinates == coords);
   }
 
   @override
@@ -42,12 +44,7 @@ abstract base class LayerNode<TSpec extends spec.Layer> extends scene.Node with 
   @override
   void add(scene.Node child) {
     super.add(child);
-
-    if (child is LayerTileNode) {
-      // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
-      child.prepare().then((_) => renderer.notifyListeners());
-    }
-
+    (child as LayerTileNode).setGeometryAndMaterial();
     children.sort((a, b) => a.coordinates.z.compareTo(b.coordinates.z));
   }
 

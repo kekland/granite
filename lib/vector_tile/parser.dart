@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:vector_math/vector_math_64.dart' as vm;
 import 'gen/vector_tile.pb.dart' as proto;
 import 'vector_tile.dart' as vt;
@@ -5,6 +7,11 @@ import 'vector_tile.dart' as vt;
 /// Decodes a protobuf Tile object into a [TileData] object.
 vt.Tile decodeTile(proto.Tile tile) {
   return vt.Tile(layers: tile.layers.map(decodeLayer).toList());
+}
+
+vt.Tile decodeTileFromBytes(Uint8List bytes) {
+  final tile = proto.Tile.fromBuffer(bytes);
+  return decodeTile(tile);
 }
 
 /// Unwraps a protobuf Tile_Value object into a Dart primitive.

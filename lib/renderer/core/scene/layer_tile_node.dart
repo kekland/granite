@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:flutter_gpu/gpu.dart' as gpu;
 import 'package:flutter_scene/scene.dart' as scene;
 import 'package:granite/renderer/core/gpu/uniform_utils.dart';
 
@@ -10,27 +11,28 @@ import 'package:granite/spec/spec.dart' as spec;
 import 'package:granite/vector_tile/vector_tile.dart' as vt;
 import 'package:vector_math/vector_math_64.dart' as vm;
 
-vm.Matrix4 _getLayerTileTransform(TileCoordinates c, int extent, double zoom) {
-  final worldTileSize = RendererNode.kTileSize * pow(2, (zoom - c.z)).toDouble();
+vm.Matrix4 _getLayerTileTransform(TileCoordinates c, double zoom) {
+  final worldTileSize = RendererNode.kTileSize * pow(2, (zoom - c.z));
 
   final translated = vm.Matrix4.identity()
     ..translateByDouble(c.x.toDouble() * worldTileSize, c.y.toDouble() * worldTileSize, 0.0, 1.0);
 
-  final scale2 = worldTileSize / extent;
+  final scale2 = worldTileSize / RendererNode.kTileExtent;
   final scaled2 = vm.Matrix4.identity()..scaleByDouble(scale2, scale2, scale2, 1.0);
 
   return translated * scaled2;
 }
 
 abstract base class LayerTileNode<TSpec extends spec.Layer, TLayer extends LayerNode> extends scene.Node
-    with RendererDescendantNode, Preparable {
+    with RendererDescendantNode {
   LayerTileNode({
     required this.coordinates,
-    required this.vtLayer,
-  }) : super(name: '${vtLayer.name} $coordinates');
+    required this.geometryData,
+  }) : super();
 
   final TileCoordinates coordinates;
-  final vt.Layer vtLayer;
+  final GeometryData? geometryData;
+  late final int stencilRef;
   late final LayerTileGeometry geometry;
   late final LayerTileMaterial material;
 
@@ -39,18 +41,24 @@ abstract base class LayerTileNode<TSpec extends spec.Layer, TLayer extends Layer
   @override
   TLayer get parent => super.parent as TLayer;
 
+  var _hasStencilRef = false;
+  void getStencilRef() {
+    if (_hasStencilRef) return;
+    stencilRef = renderer.getTileStencilRef(coordinates);
+    _hasStencilRef = true;
+  }
+
   void setGeometryAndMaterial();
 
-  @override
-  Future<void> prepareImpl() async {
-    setGeometryAndMaterial();
-    await [geometry.prepare(), material.prepare()].wait;
-  }
+  bool get isClipped => true;
 
   @override
   void render(scene.SceneEncoder encoder, vm.Matrix4 parentWorldTransform) {
-    if (!visible || !isReady || geometry.isEmpty) return;
-    localTransform = _getLayerTileTransform(coordinates, vtLayer.extent, renderer.baseEvaluationContext.zoom);
+    getStencilRef();
+    geometry.maybePrepare();
+    if (!visible || geometry.isEmpty) return;
+
+    localTransform = _getLayerTileTransform(coordinates, renderer.baseEvaluationContext.zoom);
 
     final modelTransform = parentWorldTransform * localTransform;
     final cameraTransform = encoder.cameraTransform;
@@ -91,6 +99,28 @@ abstract base class LayerTileNode<TSpec extends spec.Layer, TLayer extends Layer
 
     if (vertexShaderSlot.sizeInBytes != null) encoder.renderPass.bindUniform(vertexShaderSlot, view);
     if (fragmentShaderSlot.sizeInBytes != null) encoder.renderPass.bindUniform(fragmentShaderSlot, view);
+
+    if (isClipped && !renderer.isShadowPass) {
+    // if (false) {
+      encoder.renderPass.setStencilReference(stencilRef);
+      encoder.renderPass.setStencilConfig(
+        gpu.StencilConfig(
+          compareFunction: gpu.CompareFunction.equal,
+          depthStencilPassOperation: gpu.StencilOperation.keep,
+          readMask: 0xFF,
+          writeMask: 0xFF,
+        ),
+      );
+    } else {
+      encoder.renderPass.setStencilConfig(
+        gpu.StencilConfig(
+          compareFunction: gpu.CompareFunction.always,
+          depthStencilPassOperation: gpu.StencilOperation.keep,
+          readMask: 0xFF,
+          writeMask: 0xFF,
+        ),
+      );
+    }
 
     encoder.encodePreservePipeline(parentWorldTransform * localTransform, geometry, material);
   }

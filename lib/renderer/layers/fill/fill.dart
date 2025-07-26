@@ -1,5 +1,5 @@
+import 'dart:isolate';
 import 'dart:typed_data';
-import 'dart:ui';
 
 import 'package:flutter_gpu/gpu.dart' as gpu;
 import 'package:flutter_scene/scene.dart' as scene;
@@ -16,31 +16,34 @@ final class FillLayerNode extends LayerNode<spec.LayerFill> {
   FillLayerNode({required super.specLayer, required super.preprocessedLayer});
 
   @override
-  LayerTileNode createLayerTileNode(TileCoordinates coordinates, vt.Layer vtLayer) =>
-      FillLayerTileNode(coordinates: coordinates, vtLayer: vtLayer);
+  LayerTileNode createLayerTileNode(TileCoordinates coordinates, GeometryData? geometryData) =>
+      FillLayerTileNode(coordinates: coordinates, geometryData: geometryData);
 }
 
 final class FillLayerTileNode extends LayerTileNode<spec.LayerFill, FillLayerNode> {
-  FillLayerTileNode({required super.coordinates, required super.vtLayer});
+  FillLayerTileNode({required super.coordinates, required super.geometryData});
 
   @override
   void setGeometryAndMaterial() {
-    geometry = FillLayerTileGeometry(node: this);
+    geometry = FillLayerTileGeometry(node: this, geometryData: geometryData);
     material = FillLayerTileMaterial(node: this);
   }
 }
 
 final class FillLayerTileGeometry extends LayerTileGeometry<FillLayerTileNode> {
-  FillLayerTileGeometry({required super.node});
+  FillLayerTileGeometry({required super.node, required super.geometryData});
 
-  @override
-  Future<void> prepare() async {
-    final evalContext = renderer.baseEvaluationContext.copyWithZoom(node.coordinates.z.toDouble());
+  static GeometryData? prepareGeometry({
+    required spec.EvaluationContext evalContext,
+    required spec.LayerFill specLayer,
+    required vt.Layer vtLayer,
+    required VertexProps vertexProps,
+  }) {
     final features = filterFeatures<vt.PolygonFeature>(
-      node.vtLayer,
-      node.specLayer,
+      vtLayer,
+      specLayer,
       evalContext,
-      sortKey: node.specLayer.layout.fillSortKey,
+      sortKey: specLayer.layout.fillSortKey,
     );
 
     var vertexCount = 0;
@@ -50,10 +53,7 @@ final class FillLayerTileGeometry extends LayerTileGeometry<FillLayerTileNode> {
       for (final polygon in feature.polygons) vertexCount += polygon.vertexCount;
     }
 
-    if (vertexCount == 0) {
-      isEmpty = true;
-      return;
-    }
+    if (vertexCount == 0) return null;
 
     const staticBytesPerVertex = 8;
     final bytesPerVertex = staticBytesPerVertex + vertexProps.lengthInBytes;
@@ -67,7 +67,7 @@ final class FillLayerTileGeometry extends LayerTileGeometry<FillLayerTileNode> {
 
     var vertexIndex = 0;
     for (final feature in features) {
-      vertexProps.compute(evalContext.forFeature(feature), node.specLayer);
+      vertexProps.compute(evalContext.forFeature(feature), specLayer);
       final polygons = feature.polygons;
 
       for (final polygon in polygons) {
@@ -81,10 +81,24 @@ final class FillLayerTileGeometry extends LayerTileGeometry<FillLayerTileNode> {
       }
     }
 
+    return GeometryData(
+      vertexData: TransferableTypedData.fromList([vertexData]),
+      vertexCount: vertexCount,
+      indexData: TransferableTypedData.fromList([Uint32List.fromList(indicesList)]),
+    );
+  }
+
+  @override
+  void prepare() {
+    if (geometryData == null) {
+      isEmpty = true;
+      return;
+    }
+
     uploadVertexData(
-      vertexData,
-      vertexCount,
-      Uint32List.fromList(indicesList).buffer.asByteData(),
+      geometryData!.vertexData.materialize().asByteData(),
+      geometryData!.vertexCount,
+      geometryData!.indexData.materialize().asByteData(),
       indexType: gpu.IndexType.int32,
     );
   }

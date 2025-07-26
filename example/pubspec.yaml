@@ -24,9 +24,13 @@ dependencies:
   native_assets_cli: ^0.13.0
   flutter_gpu_shaders: ^0.3.0
 
+  objective_c: ^8.1.0
+  ffi: ^2.1.4
+
 
 dev_dependencies:
   flutter_lints: ^6.0.0
+  ffigen: ^19.1.0
 
 flutter:
   uses-material-design: true

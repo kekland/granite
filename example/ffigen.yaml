@@ -1,0 +1,36 @@
+name: MacosNativeBindings
+description: Bindings for native macOS libraries
+language: objc
+output: 
+  bindings: 'lib/gen/macos_native_bindings.dart'
+  objc-bindings: 'macos/Classes/macos_native_bindings.dart.m'
+
+include-transitive-objc-interfaces: true
+include-transitive-objc-protocols: true
+include-transitive-objc-categories: true
+
+headers:
+  entry-points:
+    - $MACOS_SDK/System/Library/Frameworks/Metal.framework/Headers/Metal.h
+
+exclude-all-by-default: true
+
+enums:
+  include:
+    - 'CGImageAlphaInfo'
+    - 'CGImageByteOrderInfo'
+
+functions:
+  include:
+    - 'MTLCreateSystemDefaultDevice'
+
+objc-interfaces:
+  include:
+    - 'MTLCaptureManager'
+
+external-versions:
+  ios:
+    min: 14.0.0
+
+preamble: |
+  // ignore_for_file: camel_case_types, non_constant_identifier_names, unused_element, unused_field, return_of_invalid_type, void_checks, annotate_overrides, no_leading_underscores_for_local_identifiers, library_private_types_in_public_api

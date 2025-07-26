@@ -1,3 +1,7 @@
 #version 460 core
 
-void main() {}
+out vec4 f_color;
+
+void main() {
+
+}

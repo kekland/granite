@@ -6,10 +6,14 @@
 // dart format off
 
 class RawShaders {
-static const String shadow_pass_material_frag = '''
+static const String empty_material_frag = '''
 #version 460 core
 
-void main() {}
+out vec4 f_color;
+
+void main() {
+  f_color = vec4(0.0);
+}
 
 ''';
 
@@ -46,6 +50,21 @@ void main() {
   gl_Position = vec4(position, 0.0, 1.0);
   v_texCoord = texCoord;
 }
+''';
+
+static const String tile_stencil_vert = '''
+#version 460 core
+
+uniform TileStencilInfo {
+  mat4 mvp;
+} tile_stencil_info;
+
+in highp vec2 position;
+
+void main() {
+  gl_Position = tile_stencil_info.mvp * vec4(position, 0.0, 1.0);
+}
+
 ''';
 
 static const String background_frag = '''

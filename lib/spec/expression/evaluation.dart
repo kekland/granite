@@ -110,13 +110,13 @@ class EvaluationContext {
   }
 
   /// Creates a copy of this evaluation context with a given zoom.
-  EvaluationContext copyWithZoom(double zoom) {
+  EvaluationContext copyWithZoom(num zoom) {
     return EvaluationContext(
       id: id,
       geometryType: geometryType,
       lineProgress: lineProgress,
       locale: locale,
-      zoom: zoom,
+      zoom: zoom.toDouble(),
       bindings: bindings,
       properties: properties,
       featureState: featureState,
