@@ -18,9 +18,9 @@
     ".flutter-plugins-dependencies": true,
   },
   "material-icon-theme.folders.associations": {
-    "tilejson": "json",
-    "spec": "json",
-    "vector_tile": "json",
+    "tilejson": "dump",
+    "spec": "dump",
+    "vector_tile": "dump",
     "references": "json",
     "preprocessor": "scripts",
     "layers": "queue",
