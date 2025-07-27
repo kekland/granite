@@ -4,6 +4,7 @@ TODOS, sorted by priority (maybe)
 - [ ] Rounded building corners
 - [ ] Test flutter_map compatibility
 - [ ] Fix tile loading when pitching the camera
+- [ ] Move logic from `RendererNode` to `RendererScene`
 - [ ] Worker threads - figure out how to send the raw data without copying
 - [ ] SYMBOL LAYER
 - [ ] Globe projection
