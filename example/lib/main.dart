@@ -17,7 +17,7 @@ Future<void> main() async {
 
   return runApp(
     MaterialApp(
-      showPerformanceOverlay: false,
+      showPerformanceOverlay: true,
       theme: ThemeData.from(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.pink,
@@ -53,9 +53,9 @@ class _TileRendererTestState extends State<TileRendererMapCameraTest> with Ticke
   late final _pT = Tween<double>(begin: 0.0, end: 0.0);
 
   // NYC
-  late final _latT = Tween<double>(begin: 40.7128, end: 40.7128);
-  late final _lonT = Tween<double>(begin: -74.0060, end: -74.0060);
-  late final _zT = Tween<double>(begin: 13.0, end: 13.0);
+  // late final _latT = Tween<double>(begin: 40.7128, end: 40.7128);
+  // late final _lonT = Tween<double>(begin: -74.0060, end: -74.0060);
+  // late final _zT = Tween<double>(begin: 13.0, end: 13.0);
 
   MapCamera get camera => MapCamera(center: LatLng(lat, lon), zoom: z, bearing: bearing, pitch: pitch);
 
@@ -69,9 +69,9 @@ class _TileRendererTestState extends State<TileRendererMapCameraTest> with Ticke
   // late final _lonT = Tween<double>(begin: 76.8512, end: 76.8512);
   // late final _zT = Tween<double>(begin: 14.0, end: 14.0);
 
-  // late final _latT = Tween<double>(begin: 0, end: 0);
-  // late final _lonT = Tween<double>(begin: 0, end: 0);
-  // late final _zT = Tween<double>(begin: 0.0, end: 0.0);
+  late final _latT = Tween<double>(begin: 0, end: 0);
+  late final _lonT = Tween<double>(begin: 0, end: 0);
+  late final _zT = Tween<double>(begin: 0.0, end: 0.0);
 
   double get lat => _latT.evaluate(_acLat);
   double get lon => _lonT.evaluate(_acLon);
@@ -93,6 +93,8 @@ class _TileRendererTestState extends State<TileRendererMapCameraTest> with Ticke
   @override
   void initState() {
     super.initState();
+
+    print('init state');
 
     controller.camera = camera;
     controller.pixelRatio = 2.0;

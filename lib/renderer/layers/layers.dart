@@ -5,6 +5,7 @@ export 'background/background.dart';
 export 'fill/fill.dart';
 export 'fill_extrusion/fill_extrusion.dart';
 export 'line/line.dart';
+export 'symbol/symbol.dart';
 
 LayerNode createLayerNode(spec.Layer specLayer, PreprocessedLayer preprocessedLayer) {
   if (!supportedLayers.contains(specLayer.type)) {
@@ -26,6 +27,10 @@ LayerNode createLayerNode(spec.Layer specLayer, PreprocessedLayer preprocessedLa
     ),
     spec.Layer$Type.line => LineLayerNode(
       specLayer: specLayer as spec.LayerLine,
+      preprocessedLayer: preprocessedLayer,
+    ),
+    spec.Layer$Type.symbol => SymbolLayerNode(
+      specLayer: specLayer as spec.LayerSymbol,
       preprocessedLayer: preprocessedLayer,
     ),
     _ => throw UnsupportedError('Unsupported layer type: ${specLayer.type}, id: ${specLayer.id}'),

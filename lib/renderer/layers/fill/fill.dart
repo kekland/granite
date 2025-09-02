@@ -16,7 +16,7 @@ final class FillLayerNode extends LayerNode<spec.LayerFill> {
   FillLayerNode({required super.specLayer, required super.preprocessedLayer});
 
   @override
-  LayerTileNode createLayerTileNode(TileCoordinates coordinates, GeometryData? geometryData) =>
+  LayerTileNode createLayerTileNode(TileCoordinates coordinates, GeometryData? geometryData, vt.Layer? vtLayer) =>
       FillLayerTileNode(coordinates: coordinates, geometryData: geometryData);
 }
 
@@ -31,7 +31,9 @@ final class FillLayerTileNode extends LayerTileNode<spec.LayerFill, FillLayerNod
 }
 
 final class FillLayerTileGeometry extends LayerTileGeometry<FillLayerTileNode> {
-  FillLayerTileGeometry({required super.node, required super.geometryData});
+  FillLayerTileGeometry({required super.node, required this.geometryData});
+
+  final GeometryData? geometryData;
 
   static GeometryData? prepareGeometry({
     required spec.EvaluationContext evalContext,

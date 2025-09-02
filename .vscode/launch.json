@@ -48,5 +48,16 @@
         "--enable-flutter-gpu",
       ]
     },
+    {
+      "name": "example/text-shaping-playground",
+      "cwd": "example",
+      "request": "launch",
+      "program": "lib/text-shaping-playground.main.dart",
+      "type": "dart",
+      "args": [
+        "--enable-impeller",
+        "--enable-flutter-gpu",
+      ]
+    },
   ]
 }

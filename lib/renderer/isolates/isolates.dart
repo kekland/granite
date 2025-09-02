@@ -1,3 +1,5 @@
+import 'dart:isolate';
+
 import 'package:granite/renderer/isolates/layer_tile_geometry_worker_isolate.dart';
 
 import 'core/worker_isolate_pool.dart';
@@ -9,7 +11,7 @@ class Isolates {
   Isolates();
 
   Future<void> spawn() async {
-    _layerTileGeometry = LayerTileGeometryWorkerIsolatePool(16);
+    _layerTileGeometry = LayerTileGeometryWorkerIsolatePool(4);
     await Future.wait(pools.map((pool) => pool!.spawn()));
   }
 

@@ -5,4 +5,5 @@ const supportedLayers = [
   spec.Layer$Type.fill,
   spec.Layer$Type.fillExtrusion,
   spec.Layer$Type.line,
+  // spec.Layer$Type.symbol,
 ];

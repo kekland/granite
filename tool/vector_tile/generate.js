@@ -15,14 +15,4 @@ if (fs.existsSync(generatedLocation)) fs.rmSync(generatedLocation, { recursive: 
 fs.mkdirSync(generatedLocation, { recursive: true });
 
 const command = `protoc --dart_out=${generatedLocation} --proto_path=${protoPath} vector_tile.proto`;
-exec(command, (error, stdout, stderr) => {
-  if (error) {
-    console.error(`Error generating Dart code: ${error.message}`);
-    return;
-  }
-  if (stderr) {
-    console.error(`Error output: ${stderr}`);
-    return;
-  }
-  console.log(`Dart code generated successfully:\n${stdout}`);
-});
+exec(command);

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:isolate';
 import 'dart:typed_data';
 
@@ -28,11 +29,9 @@ class GeometryData {
 }
 
 abstract base class LayerTileGeometry<TNode extends LayerTileNode> extends scene.Geometry {
-  LayerTileGeometry({required this.node, required this.geometryData}) {
+  LayerTileGeometry({required this.node}) {
     setVertexShader(node.parent.vertexShader);
   }
-
-  final GeometryData? geometryData;
 
   bool isEmpty = false;
 
@@ -43,13 +42,22 @@ abstract base class LayerTileGeometry<TNode extends LayerTileNode> extends scene
   final TNode node;
 
   bool _isPrepared = false;
-  void prepare();
-  void maybePrepare() {
-    if (!_isPrepared) {
-      prepare();
-      _isPrepared = true;
+  bool _isPreparing = false;
+  FutureOr<void> prepare();
+  FutureOr<void> maybePrepare() {
+    if (!_isPreparing && !_isPrepared) {
+      final v = prepare();
+      _isPreparing = true;
+
+      if (v is Future) {
+        return v.then((_) => _isPrepared = true);
+      } else {
+        _isPrepared = true;
+      }
     }
   }
+
+  bool get isReady => _isPrepared;
 
   @override
   void bind(
@@ -59,6 +67,7 @@ abstract base class LayerTileGeometry<TNode extends LayerTileNode> extends scene
     vm.Matrix4 cameraTransform,
     vm.Vector3 cameraPosition,
   ) {
+    if (!_isPrepared) return;
     bindVertexData(pass);
   }
 }

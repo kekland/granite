@@ -1,10 +1,12 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
+import 'package:granite/controller/resolvers/glyphs_resolver.dart';
 import 'package:granite/controller/resolvers/source_resolver.dart';
 import 'package:granite/controller/resolvers/tile_resolver.dart';
 import 'package:granite/renderer/renderer.dart';
 import 'package:granite/spec/spec.dart' as spec;
+import 'package:granite/vector_tile/vector_tile.dart' as vt;
 import 'package:quiver/cache.dart';
 
 class MapController extends ChangeNotifier {
@@ -15,8 +17,14 @@ class MapController extends ChangeNotifier {
     double pixelRatio = 1.0,
     this.sourceResolver = defaultSourceResolver,
     this.vectorTileResolver = defaultVectorTileResolver,
+    this.glyphsResolver = defaultGlyphsResolver,
   }) : _style = style {
-    scene = RendererScene(style: style, shaderLibraryProvider: shaderLibraryProvider);
+    scene = RendererScene(
+      style: style,
+      shaderLibraryProvider: shaderLibraryProvider,
+      glyphsResolver: (fontStack, rangeFrom) => glyphsResolver(style.glyphs!, fontStack, rangeFrom),
+    );
+
     _camera = initialCamera ?? MapCamera.zero;
     _pixelRatio = pixelRatio;
     _initialize();
@@ -29,6 +37,7 @@ class MapController extends ChangeNotifier {
 
   final SourceResolverFn sourceResolver;
   final VectorTileResolverFn vectorTileResolver;
+  final GlyphsResolverFn glyphsResolver;
 
   late MapCamera _camera;
   MapCamera get camera => _camera;
@@ -105,14 +114,14 @@ class MapController extends ChangeNotifier {
     }
   }
 
-  final _tileCache = MapCache<TileCoordinates, List<GeometryData?>>.lru(maximumSize: 100);
+  final _tileCache = MapCache<TileCoordinates, (vt.Tile, List<GeometryData?>)>.lru(maximumSize: 100);
 
   Future<void> _maybeLoadTile(Object sourceId, TileCoordinates coords) async {
     if (_sourceLoadingTiles[sourceId]!.contains(coords)) return;
     if (_sourceVisibleTiles[sourceId]!.contains(coords)) return;
     final _cached = await _tileCache.get(coords);
     if (_cached != null) {
-      scene.renderer.addTile(coords, _cached);
+      scene.renderer.addTile(coords, _cached.$2, _cached.$1);
       _sourceVisibleTiles[sourceId]!.add(coords);
       notifyListeners();
       return;
@@ -122,11 +131,12 @@ class MapController extends ChangeNotifier {
 
     final source = style.sources[sourceId]!;
     final vtData = await vectorTileResolver(source as spec.SourceVector, coords);
+    final vtTile = vt.decodeTileFromBytes(vtData);
     final geometryDatas = await scene.renderer.computeTileGeometryDatas(coords, vtData);
-    await _tileCache.set(coords, geometryDatas);
+    await _tileCache.set(coords, (vtTile, geometryDatas));
 
     if (_sourceRequestedTiles[sourceId]!.contains(coords)) {
-      scene.renderer.addTile(coords, geometryDatas);
+      scene.renderer.addTile(coords, geometryDatas, vtTile);
       _sourceVisibleTiles[sourceId]!.add(coords);
       notifyListeners();
     }

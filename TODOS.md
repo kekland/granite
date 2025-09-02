@@ -12,3 +12,5 @@ TODOS, sorted by priority (maybe)
 - [ ] Gesture system (custom gesture recognizer, because the default one is not good enough)
 - [ ] Better controller logic (debounce, tile pyramid, etc)
 - [ ] Elevation data
+- [ ] Use impellerc's reflection information (from the shaderbundle) to avoid having to call `UniformSlot.getMemberOffset` billion times per frame
+- [ ] Investigate/optimize isolate memory usage

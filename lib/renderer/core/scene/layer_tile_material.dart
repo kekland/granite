@@ -8,6 +8,7 @@ abstract base class LayerTileMaterial<TNode extends LayerTileNode> extends scene
   }
 
   UniformProps get uniformProps => node.parent.uniformProps;
+  bool get usesShadowMap => true;
 
   final TNode node;
 
@@ -36,14 +37,16 @@ abstract base class LayerTileMaterial<TNode extends LayerTileNode> extends scene
       pass.setCullMode(gpu.CullMode.backFace);
       pass.setWindingOrder(gpu.WindingOrder.clockwise);
 
-      pass.bindTexture(
-        fragmentShader.getUniformSlot('u_shadow_map'),
-        node.renderer.shadowMapTexture,
-        sampler: gpu.SamplerOptions(
-          widthAddressMode: gpu.SamplerAddressMode.clampToEdge,
-          heightAddressMode: gpu.SamplerAddressMode.clampToEdge,
-        ),
-      );
+      if (usesShadowMap) {
+        pass.bindTexture(
+          fragmentShader.getUniformSlot('u_shadow_map'),
+          node.renderer.shadowMapTexture,
+          sampler: gpu.SamplerOptions(
+            widthAddressMode: gpu.SamplerAddressMode.clampToEdge,
+            heightAddressMode: gpu.SamplerAddressMode.clampToEdge,
+          ),
+        );
+      }
     }
   }
 }

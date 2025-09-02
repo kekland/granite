@@ -542,24 +542,6 @@ const generateCopyWith = ($class) => {
   return code;
 }
 
-const generateEquatable = ($class) => {
-  const { name, extends: $extends, fields } = $class;
-
-  const code = [];
-
-  code.push(`  @override`);
-  code.push(`  List<Object?> get props => [`);
-
-  for (const field of fields) {
-    const { name } = field;
-    code.push(`    ${name},`);
-  }
-
-  code.push(`  ];`);
-
-  return code;
-}
-
 const generateFieldGetter = ($class) => {
   const { fields } = $class;
 
@@ -592,7 +574,6 @@ const generateDartCode = () => {
   code.push(`import '../spec.dart';`);
   code.push(`import '../utils/vector_json_utils.dart';`);
   code.push('');
-  code.push(`import 'package:equatable/equatable.dart';`);
   code.push(`import 'package:vector_math/vector_math_64.dart';`);
   code.push('');
   code.push('// dart format off');
@@ -602,10 +583,10 @@ const generateDartCode = () => {
     const { name, extends: $extends, fields } = $class;
 
     if ($extends) {
-      code.push(`class ${name} extends ${$extends} with EquatableMixin {`);
+      code.push(`class ${name} extends ${$extends} {`);
     }
     else {
-      code.push(`class ${name} with EquatableMixin {`);
+      code.push(`class ${name} {`);
     }
 
     code.push(generateClassConstConstructor($class).join('\n'));
@@ -617,8 +598,6 @@ const generateDartCode = () => {
     code.push(generateFields($class).join('\n'));
     code.push('');
     code.push(generateCopyWith($class).join('\n'));
-    code.push('');
-    code.push(generateEquatable($class).join('\n'));
     if ($class.extends === 'Layout' || $class.extends === 'Paint') {
       code.push('');
       code.push(generateFieldGetter($class).join('\n'));

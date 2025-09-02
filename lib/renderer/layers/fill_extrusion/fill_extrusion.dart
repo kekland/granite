@@ -19,7 +19,7 @@ final class FillExtrusionLayerNode extends LayerNode<spec.LayerFillExtrusion> {
   final _surface = CustomizableSurface();
 
   @override
-  LayerTileNode createLayerTileNode(TileCoordinates coordinates, GeometryData? geometryData) =>
+  LayerTileNode createLayerTileNode(TileCoordinates coordinates, GeometryData? geometryData, vt.Layer? vtLayer) =>
       FillExtrusionLayerTileNode(coordinates: coordinates, geometryData: geometryData);
 
   @override
@@ -64,7 +64,9 @@ final class FillExtrusionLayerTileNode extends LayerTileNode<spec.LayerFillExtru
 }
 
 final class FillExtrusionLayerTileGeometry extends LayerTileGeometry<FillExtrusionLayerTileNode> {
-  FillExtrusionLayerTileGeometry({required super.node, required super.geometryData});
+  FillExtrusionLayerTileGeometry({required super.node, required this.geometryData});
+
+  final GeometryData? geometryData;
 
   static GeometryData? prepareGeometry({
     required spec.EvaluationContext evalContext,

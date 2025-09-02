@@ -16,7 +16,7 @@ final class LineLayerNode extends LayerNode<spec.LayerLine> {
   LineLayerNode({required super.specLayer, required super.preprocessedLayer});
 
   @override
-  LayerTileNode createLayerTileNode(TileCoordinates coordinates, GeometryData? geometryData) =>
+  LayerTileNode createLayerTileNode(TileCoordinates coordinates, GeometryData? geometryData, vt.Layer? vtLayer) =>
       LineLayerTileNode(coordinates: coordinates, geometryData: geometryData);
 }
 
@@ -36,7 +36,9 @@ final class LineLayerTileNode extends LayerTileNode<spec.LayerLine, LineLayerNod
 }
 
 base class LineLayerTileGeometry extends LayerTileGeometry<LineLayerTileNode> {
-  LineLayerTileGeometry({required super.node, required super.geometryData});
+  LineLayerTileGeometry({required super.node, required this.geometryData});
+
+  final GeometryData? geometryData;
 
   static GeometryData? prepareGeometry({
     required spec.EvaluationContext evalContext,

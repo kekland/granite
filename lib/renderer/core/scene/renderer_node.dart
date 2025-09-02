@@ -6,6 +6,8 @@ import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_gpu/gpu.dart' as gpu;
 import 'package:flutter_scene/scene.dart' as scene;
+import 'package:granite/glyphs/glyphs.dart' as glyphs;
+import 'package:granite/renderer/core/atlas/glyph_atlas.dart';
 import 'package:granite/renderer/core/camera/light_camera.dart';
 import 'package:granite/renderer/core/gpu/customizable_surface.dart';
 import 'package:granite/renderer/core/gpu/stencil_ref_buffer.dart';
@@ -14,6 +16,7 @@ import 'package:granite/renderer/isolates/isolates.dart';
 import 'package:granite/spec/spec.dart' as spec;
 
 import 'package:granite/renderer/renderer.dart';
+import 'package:granite/vector_tile/vector_tile.dart' as vt;
 import 'package:vector_math/vector_math_64.dart' as vm;
 
 // TODOS:
@@ -25,6 +28,7 @@ final class RendererNode extends scene.Node with ChangeNotifier {
     super.localTransform,
     required this.style,
     required this.shaderLibraryProvider,
+    required this.glyphsResolver,
   }) {
     shaderLibraryProvider.addListener(reassemble);
     initialize();
@@ -32,6 +36,7 @@ final class RendererNode extends scene.Node with ChangeNotifier {
 
   final spec.Style style;
   final ShaderLibraryProvider shaderLibraryProvider;
+  final Future<glyphs.Glyphs> Function(String fontStack, int rangeFrom) glyphsResolver;
 
   late PreprocessedStyle _preprocessedStyle;
   PreprocessedStyle get preprocessedStyle => _preprocessedStyle;
@@ -46,8 +51,6 @@ final class RendererNode extends scene.Node with ChangeNotifier {
 
   static const double kTileSize = 512.0;
   static const int kTileExtent = 4096;
-
-  double get pixelRatio => 2.0;
 
   @override
   void detach() {
@@ -83,7 +86,7 @@ final class RendererNode extends scene.Node with ChangeNotifier {
     removeAll();
     initialize();
 
-    // TODO: do this later.
+    // TODO: bring this back later.
     // // If count of layers is mismatched, we cannot reassemble correctly.
     // if (oldChildren.length != children.length) return;
 
@@ -116,12 +119,15 @@ final class RendererNode extends scene.Node with ChangeNotifier {
   final _tileStencilRefs = <TileCoordinates, int>{};
   int getTileStencilRef(TileCoordinates coords) => _tileStencilRefs[coords]!;
 
-  Future<void> addTile(TileCoordinates coords, List<GeometryData?> geometryDatas) async {
+  Future<void> addTile(TileCoordinates coords, List<GeometryData?> geometryDatas, vt.Tile? vtTile) async {
     _tileStencilRefs[coords] = _stencilRefBuffer.allocate();
     for (var i = 0; i < geometryDatas.length; i++) {
       final layer = children[i];
       final geometryData = geometryDatas[i];
-      layer.addTile(coords, geometryData);
+
+      final vtLayerName = layer.specLayer.sourceLayer;
+      final vtLayer = vtTile?.layers.firstWhereOrNull((v) => v.name == vtLayerName);
+      layer.addTile(coords, geometryData, vtLayer);
     }
   }
 
@@ -218,6 +224,62 @@ final class RendererNode extends scene.Node with ChangeNotifier {
     //   TextureGeometry(renderer: this),
     //   TextureMaterial(renderer: this, texture: stencilTexture, opacity: 0.5),
     // );
+  }
+
+  // ----------------------------------------------------------------------------------------------------------------
+  // Glyphs
+  // ----------------------------------------------------------------------------------------------------------------
+  final _resolvingFutures = <(String, int), Future>{};
+  Future<dynamic> _resolveAndPutMissingGlyphs(String fontStack, Iterable<int> missingGlyphRanges) async {
+    final futures = <Future>[];
+
+    for (final r in missingGlyphRanges) {
+      final key = (fontStack, r);
+      if (_resolvingFutures.containsKey(key)) {
+        futures.add(_resolvingFutures[key]!);
+        continue;
+      }
+
+      print('resolving: $fontStack, $r');
+      final future = glyphsResolver(fontStack, r).then(glyphAtlas.putGlyphs);
+      _resolvingFutures[key] = future;
+      futures.add(future);
+    }
+
+    return futures.wait;
+  }
+
+  final glyphAtlas = GlyphAtlas(width: 2048, height: 2048);
+  Future<List<GlyphData?>> getGlyphsForText(String fontStack, String text) async {
+    final missingGlyphRanges = <int>{};
+
+    for (final rune in text.runes) {
+      if (!glyphAtlas.contains(fontStack, rune)) missingGlyphRanges.add((rune ~/ 256) * 256);
+    }
+
+    // Load missing glyphs
+    await _resolveAndPutMissingGlyphs(fontStack, missingGlyphRanges);
+
+    final result = <GlyphData?>[];
+    for (final rune in text.runes) {
+      final data = glyphAtlas.getGlyphData(fontStack, rune);
+      result.add(data);
+    }
+
+    return result;
+  }
+
+  Future<List<GlyphData?>> getGlyphsForFormatted(String fontStack, spec.Formatted formatted) async {
+    final result = <GlyphData?>[];
+
+    for (final section in formatted.sections) {
+      if (section.text != null) {
+        final glyphs = await getGlyphsForText(section.fontStack ?? fontStack, section.text!);
+        result.addAll(glyphs);
+      }
+    }
+
+    return result;
   }
 }
 

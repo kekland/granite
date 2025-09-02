@@ -322,22 +322,6 @@ List<String> _generateExpressionEvaluateCode(FunctionDeclaration decl) {
   return code;
 }
 
-List<String> _generateExpressionEquatableCode(FunctionDeclaration decl) {
-  final code = <String>[];
-  final parameters = _getExpressionParameters(decl);
-
-  code.add('  @override');
-  code.add('  List<Object?> get props => [');
-
-  for (final parameter in parameters) {
-    code.add('    ${parameter.name},');
-  }
-
-  code.add('  ];');
-
-  return code;
-}
-
 List<String> _generateExpressionCode(Map<String, dynamic> referenceExpressions, FunctionDeclaration decl) {
   final annotation = _getExpressionAnnotation(decl);
   final expr = decl.functionExpression;
@@ -369,8 +353,6 @@ List<String> _generateExpressionCode(Map<String, dynamic> referenceExpressions, 
   code.addAll(_generateExpressionFieldsCode(decl));
   code.add('');
   code.addAll(_generateExpressionEvaluateCode(decl));
-  code.add('');
-  code.addAll(_generateExpressionEquatableCode(decl));
   code.add('}');
 
   return code;

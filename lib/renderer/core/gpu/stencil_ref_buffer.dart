@@ -1,5 +1,5 @@
 class StencilRefBuffer {
-  StencilRefBuffer({this.maxStencilRef = 255});
+  StencilRefBuffer({this.maxStencilRef = 254});
 
   final int maxStencilRef;
   late final _state = List.generate(maxStencilRef + 1, (_) => false);
@@ -8,7 +8,7 @@ class StencilRefBuffer {
     for (var i = 0; i < _state.length; i++) {
       if (!_state[i]) {
         _state[i] = true;
-        return i;
+        return i + 1;
       }
     }
 
@@ -16,10 +16,6 @@ class StencilRefBuffer {
   }
 
   void deallocate(int stencilRef) {
-    if (stencilRef < 0 || stencilRef > maxStencilRef) {
-      throw RangeError.range(stencilRef, 0, maxStencilRef, 'stencilRef');
-    }
-
-    _state[stencilRef] = false;
+    _state[stencilRef - 1] = false;
   }
 }

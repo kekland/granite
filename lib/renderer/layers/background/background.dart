@@ -5,13 +5,14 @@ import 'package:flutter_scene/scene.dart' as scene;
 import 'package:granite/renderer/renderer.dart';
 import 'package:granite/renderer/utils/byte_data_utils.dart';
 import 'package:granite/spec/spec.dart' as spec;
+import 'package:granite/vector_tile/vector_tile.dart' as vt;
 import 'package:vector_math/vector_math_64.dart' as vm;
 
 final class BackgroundLayerNode extends LayerNode<spec.LayerBackground> {
   BackgroundLayerNode({required super.specLayer, required super.preprocessedLayer});
 
   @override
-  LayerTileNode createLayerTileNode(TileCoordinates coordinates, GeometryData? geometryData) =>
+  LayerTileNode createLayerTileNode(TileCoordinates coordinates, GeometryData? geometryData, vt.Layer? vtLayer) =>
       BackgroundLayerTileNode(coordinates: coordinates, geometryData: geometryData);
 }
 
@@ -26,7 +27,7 @@ final class BackgroundLayerTileNode extends LayerTileNode<spec.LayerBackground, 
 }
 
 final class BackgroundLayerTileGeometry extends LayerTileGeometry<BackgroundLayerTileNode> {
-  BackgroundLayerTileGeometry({required super.node}) : super(geometryData: null);
+  BackgroundLayerTileGeometry({required super.node});
 
   @override
   void prepare() {

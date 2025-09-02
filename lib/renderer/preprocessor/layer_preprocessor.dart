@@ -22,7 +22,7 @@ class PreprocessedLayer {
   final List<PropInstruction> uniformPropInstructions;
 }
 
-final _variableRegex = RegExp(r'(highp|mediump|lowp)? ?([a-zA-Z0-9]+) ([a-zA-Z0-9]+)');
+final _variableRegex = RegExp(r'(highp|mediump|lowp)? ?([a-zA-Z0-9]+) ([a-zA-Z0-9_]+)');
 (String? precision, String type, String name) _parseVariable(String line) {
   final match = _variableRegex.firstMatch(line);
   if (match == null) {
@@ -48,8 +48,18 @@ String _getLayerType(spec.Layer layer) {
   };
 }
 
+String _snakeCaseToLowerCamelCase(String snakeCase) {
+  final parts = snakeCase.split('_');
+  if (parts.isEmpty) return snakeCase;
+
+  final first = parts.first.toLowerCase();
+  final rest = parts.skip(1).map((part) => part[0].toUpperCase() + part.substring(1).toLowerCase()).join('');
+  return first + rest;
+}
+
 String _joinLowerCamelCase(List<String> parts) {
   if (parts.isEmpty) return '';
+
   final first = parts.first[0].toLowerCase() + parts.first.substring(1);
   final rest = parts.skip(1).map((part) => part[0].toUpperCase() + part.substring(1).toLowerCase()).join('');
   return first + rest;
@@ -127,6 +137,10 @@ List<String> _indentLines(List<String> lines, [int indent = 2]) {
   else if (layer.type == spec.Layer$Type.fillExtrusion) {
     return (RawShaders.fill_extrusion_vert, RawShaders.fill_extrusion_frag);
   }
+  //
+  else if (layer.type == spec.Layer$Type.symbol) {
+    return (RawShaders.symbol_vert, RawShaders.symbol_frag);
+  }
 
   return null;
 }
@@ -186,7 +200,12 @@ class LayerPreprocessor {
     for (final (index, variable) in vertexPropDeclarations) {
       final (precision, glslType, name) = _parseVariable(variable);
       final dartType = _glslTypeToDartType(glslType);
-      final propSymbol = Symbol(_joinLowerCamelCase([layerType, name]));
+
+      // TODO: Symbols use `text_*` and `icon_*`. Maybe handle this in a better way?
+      final propSymbol = layerType == 'symbol'
+          ? Symbol(_joinLowerCamelCase([_snakeCaseToLowerCamelCase(name)]))
+          : Symbol(_joinLowerCamelCase([layerType, _snakeCaseToLowerCamelCase(name)]));
+
       final prop = layer.paint!.getProperty(propSymbol);
       final analysis = analyzeProperty(prop);
 

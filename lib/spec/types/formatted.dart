@@ -1,10 +1,10 @@
-import 'package:equatable/equatable.dart';
+import 'package:collection/collection.dart';
 import 'package:granite/spec/spec.dart';
 
 /// A class that represents a section of formatted text.
 ///
 /// Used inside of [Formatted] and represents a contiguous section of text with the same formatting.
-class FormattedSection with EquatableMixin {
+class FormattedSection {
   const FormattedSection.text({
     required this.text,
     this.scale,
@@ -35,14 +35,27 @@ class FormattedSection with EquatableMixin {
   final num? textColor;
 
   @override
-  List<Object?> get props => [text, image, scale, fontStack, textColor];
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other.runtimeType != runtimeType) return false;
+
+    return other is FormattedSection &&
+        other.text == text &&
+        other.image == image &&
+        other.scale == scale &&
+        other.fontStack == fontStack &&
+        other.textColor == textColor;
+  }
+
+  @override
+  int get hashCode => Object.hash(text, image, scale, fontStack, textColor);
 }
 
 /// A class representing formatted text in the context of the style spec.
 ///
 /// Formatted text is a list of [FormattedSection]s, each of which represents a contiguous section of text with the same
 /// formatting applied.
-class Formatted with EquatableMixin {
+class Formatted {
   const Formatted({
     required this.sections,
   });
@@ -81,19 +94,23 @@ class Formatted with EquatableMixin {
           LayoutSymbol$TextTransform.none => section.text!,
         };
 
-        newSections.add(FormattedSection.text(
-          text: newText,
-          scale: section.scale,
-          fontStack: section.fontStack,
-          textColor: section.textColor,
-        ));
+        newSections.add(
+          FormattedSection.text(
+            text: newText,
+            scale: section.scale,
+            fontStack: section.fontStack,
+            textColor: section.textColor,
+          ),
+        );
       } else {
-        newSections.add(FormattedSection.image(
-          image: section.image!,
-          scale: section.scale,
-          fontStack: section.fontStack,
-          textColor: section.textColor,
-        ));
+        newSections.add(
+          FormattedSection.image(
+            image: section.image!,
+            scale: section.scale,
+            fontStack: section.fontStack,
+            textColor: section.textColor,
+          ),
+        );
       }
     }
 
@@ -101,5 +118,11 @@ class Formatted with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [sections];
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Formatted && const ListEquality().equals(other.sections, sections);
+  }
+
+  @override
+  int get hashCode => const ListEquality().hash(sections);
 }

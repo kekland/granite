@@ -21,10 +21,11 @@
     "tilejson": "dump",
     "spec": "dump",
     "vector_tile": "dump",
+    "glyphs": "dump",
     "references": "json",
     "preprocessor": "scripts",
     "layers": "queue",
-    "analysis": "test"
+    "analysis": "test",
   },
   "editor.rulers": [
     120

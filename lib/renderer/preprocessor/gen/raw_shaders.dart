@@ -11,9 +11,7 @@ static const String empty_material_frag = '''
 
 out vec4 f_color;
 
-void main() {
-  f_color = vec4(0.0);
-}
+void main() {}
 
 ''';
 
@@ -157,6 +155,8 @@ layout (std140) uniform TileInfo {
   mat4 mvp;
   mat4 camera_transform;
   mat4 model_transform;
+  mat4 screen_to_clip_transform;
+  mat4 clip_to_screen_transform;
   vec3 camera_position;
 
   // light
@@ -304,6 +304,8 @@ layout (std140) uniform TileInfo {
   mat4 mvp;
   mat4 camera_transform;
   mat4 model_transform;
+  mat4 screen_to_clip_transform;
+  mat4 clip_to_screen_transform;
   vec3 camera_position;
 
   // light
@@ -397,6 +399,8 @@ layout (std140) uniform TileInfo {
   mat4 mvp;
   mat4 camera_transform;
   mat4 model_transform;
+  mat4 screen_to_clip_transform;
+  mat4 clip_to_screen_transform;
   vec3 camera_position;
 
   // light
@@ -493,6 +497,8 @@ layout (std140) uniform TileInfo {
   mat4 mvp;
   mat4 camera_transform;
   mat4 model_transform;
+  mat4 screen_to_clip_transform;
+  mat4 clip_to_screen_transform;
   vec3 camera_position;
 
   // light
@@ -644,6 +650,8 @@ layout (std140) uniform TileInfo {
   mat4 mvp;
   mat4 camera_transform;
   mat4 model_transform;
+  mat4 screen_to_clip_transform;
+  mat4 clip_to_screen_transform;
   vec3 camera_position;
 
   // light
@@ -808,6 +816,8 @@ layout (std140) uniform TileInfo {
   mat4 mvp;
   mat4 camera_transform;
   mat4 model_transform;
+  mat4 screen_to_clip_transform;
+  mat4 clip_to_screen_transform;
   vec3 camera_position;
 
   // light
@@ -870,6 +880,138 @@ void main() {
   gl_Position = tile_info.mvp * vec4(resolved_pos, 0.0, 1.0);
   v_line_length = line_length / tile_info.units_per_pixel;
 }
+
+''';
+
+static const String symbol_frag = '''
+#version 460 core
+
+precision highp float;
+
+#define prop_crossfade(a, b) mix(a, b, tile_info.zoom - floor(tile_info.zoom))
+
+#define prop_step(start_value, end_value, start_stop, end_stop) \\
+  mix(start_value, end_value, step(end_stop, tile_info.zoom))
+
+#define prop_interpolate(start_value, end_value, start_stop, end_stop) \\
+  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile_info.zoom))
+
+#define prop_interpolate_exponential(base, start_value, end_value, start_stop, end_stop) \\
+  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile_info.zoom))
+
+float prop_interpolate_factor(
+  float base,
+  float start_stop,
+  float end_stop,
+  float t
+) {
+  float difference = end_stop - start_stop;
+  float progress = t - start_stop;
+
+  if (difference == 0.0) return 0.0;
+  else if (base == 1.0) return progress / difference;
+  else return (pow(base, progress) - 1.0) / (pow(base, difference) - 1.0);
+}
+
+
+uniform sampler2D u_glyph_atlas_texture;
+
+#pragma prop: declare(highp vec4 text_color)
+#pragma prop: declare(float text_opacity)
+#pragma prop: declare(highp vec4 text_halo_color)
+#pragma prop: edclaret(float text_halo_width)
+
+in highp vec2 v_uv;
+
+out highp vec4 f_color;
+
+const float inner_edge = 0.75;
+const float smoothing = 1.0 / 16.0;
+
+void main() {
+  #pragma prop: resolve
+
+  float dist = texture(u_glyph_atlas_texture, v_uv).r;
+  float gamma = fwidth(dist) * 2.0 / 1.0;
+  float alpha = smoothstep(inner_edge - smoothing, inner_edge + smoothing, dist);
+  f_color = text_color * text_opacity * alpha;
+}
+
+''';
+
+static const String symbol_vert = '''
+#version 460 core
+
+precision highp float;
+
+layout (std140) uniform TileInfo {
+  // transforms and camera
+  mat4 mvp;
+  mat4 camera_transform;
+  mat4 model_transform;
+  mat4 screen_to_clip_transform;
+  mat4 clip_to_screen_transform;
+  vec3 camera_position;
+
+  // light
+  vec3 light_direction;
+  float light_intensity;
+  vec4 light_color;
+  mat4 light_mvp;
+
+  // other data
+  float units_per_pixel;
+  float zoom;
+} tile_info;
+
+#define prop_crossfade(a, b) mix(a, b, tile_info.zoom - floor(tile_info.zoom))
+
+#define prop_step(start_value, end_value, start_stop, end_stop) \\
+  mix(start_value, end_value, step(end_stop, tile_info.zoom))
+
+#define prop_interpolate(start_value, end_value, start_stop, end_stop) \\
+  mix(start_value, end_value, prop_interpolate_factor(1.0, start_stop, end_stop, tile_info.zoom))
+
+#define prop_interpolate_exponential(base, start_value, end_value, start_stop, end_stop) \\
+  mix(start_value, end_value, prop_interpolate_factor(base, start_stop, end_stop, tile_info.zoom))
+
+float prop_interpolate_factor(
+  float base,
+  float start_stop,
+  float end_stop,
+  float t
+) {
+  float difference = end_stop - start_stop;
+  float progress = t - start_stop;
+
+  if (difference == 0.0) return 0.0;
+  else if (base == 1.0) return progress / difference;
+  else return (pow(base, progress) - 1.0) / (pow(base, difference) - 1.0);
+}
+
+
+in highp vec2 position;
+in highp vec2 anchor;
+in highp vec2 uv;
+
+#pragma prop: declare(highp vec4 text_color)
+#pragma prop: declare(float text_opacity)
+#pragma prop: declare(highp vec4 text_halo_color)
+#pragma prop: edclaret(float text_halo_width)
+
+out highp vec2 v_uv;
+
+void main() {
+  #pragma prop: resolve
+  
+  vec4 clip_position = tile_info.mvp * vec4(anchor, 0.0, 1.0);
+  vec2 screen_position = (tile_info.clip_to_screen_transform * vec4(clip_position.xy / clip_position.w, 0.0, 1.0)).xy;
+  screen_position = screen_position + position;
+
+  gl_Position = tile_info.screen_to_clip_transform * vec4(screen_position, 0.0, 1.0);
+  v_uv = uv;
+}
+
 
 ''';
 

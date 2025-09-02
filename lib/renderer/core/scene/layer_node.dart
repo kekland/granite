@@ -2,6 +2,7 @@ import 'package:flutter_gpu/gpu.dart' as gpu;
 import 'package:flutter_scene/scene.dart' as scene;
 import 'package:granite/renderer/renderer.dart';
 import 'package:granite/spec/gen/style.gen.dart' as spec;
+import 'package:granite/vector_tile/vector_tile.dart' as vt;
 import 'package:vector_math/vector_math_64.dart';
 
 abstract base class LayerNode<TSpec extends spec.Layer> extends scene.Node with RendererDescendantNode {
@@ -23,10 +24,10 @@ abstract base class LayerNode<TSpec extends spec.Layer> extends scene.Node with 
   late final vertexProps = VertexProps(instructions: preprocessedLayer.vertexPropInstructions);
   late final uniformProps = UniformProps(instructions: preprocessedLayer.uniformPropInstructions);
 
-  LayerTileNode createLayerTileNode(TileCoordinates coordinates, GeometryData? geometryData);
+  LayerTileNode createLayerTileNode(TileCoordinates coordinates, GeometryData? geometryData, vt.Layer? vtLayer);
 
-  void addTile(TileCoordinates coords, GeometryData? geometryData) {
-    final layerTileNode = createLayerTileNode(coords, geometryData);
+  void addTile(TileCoordinates coords, GeometryData? geometryData, vt.Layer? vtLayer) {
+    final layerTileNode = createLayerTileNode(coords, geometryData, vtLayer);
     add(layerTileNode);
   }
 

@@ -2,3 +2,6 @@
 .dart_tool
 fixtures
 .flutter-plugins-dependencies
+.idea
+*.iml
+.metadata

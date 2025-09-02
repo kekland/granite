@@ -4,12 +4,11 @@
 import '../spec.dart';
 import '../utils/vector_json_utils.dart';
 
-import 'package:equatable/equatable.dart';
 import 'package:vector_math/vector_math_64.dart';
 
 // dart format off
 
-class Style with EquatableMixin {
+class Style {
   const Style({
     this.name,
     this.metadata,
@@ -176,28 +175,9 @@ class Style with EquatableMixin {
       layers: layers ?? this.layers,
     );
   }
-
-  @override
-  List<Object?> get props => [
-    name,
-    metadata,
-    center,
-    zoom,
-    bearing,
-    pitch,
-    light,
-    sky,
-    projection,
-    terrain,
-    sources,
-    sprite,
-    glyphs,
-    transition,
-    layers,
-  ];
 }
 
-class SourceVector extends Source with EquatableMixin {
+class SourceVector extends Source {
   const SourceVector({
     required this.type,
     this.url,
@@ -307,23 +287,9 @@ class SourceVector extends Source with EquatableMixin {
       volatile: volatile ?? this.volatile,
     );
   }
-
-  @override
-  List<Object?> get props => [
-    type,
-    url,
-    tiles,
-    bounds,
-    scheme,
-    minzoom,
-    maxzoom,
-    attribution,
-    promoteId,
-    volatile,
-  ];
 }
 
-class SourceRaster extends Source with EquatableMixin {
+class SourceRaster extends Source {
   const SourceRaster({
     required this.type,
     this.url,
@@ -433,23 +399,9 @@ class SourceRaster extends Source with EquatableMixin {
       volatile: volatile ?? this.volatile,
     );
   }
-
-  @override
-  List<Object?> get props => [
-    type,
-    url,
-    tiles,
-    bounds,
-    minzoom,
-    maxzoom,
-    tileSize,
-    scheme,
-    attribution,
-    volatile,
-  ];
 }
 
-class SourceRasterDem extends Source with EquatableMixin {
+class SourceRasterDem extends Source {
   const SourceRasterDem({
     required this.type,
     this.url,
@@ -595,27 +547,9 @@ class SourceRasterDem extends Source with EquatableMixin {
       volatile: volatile ?? this.volatile,
     );
   }
-
-  @override
-  List<Object?> get props => [
-    type,
-    url,
-    tiles,
-    bounds,
-    minzoom,
-    maxzoom,
-    tileSize,
-    attribution,
-    encoding,
-    redFactor,
-    blueFactor,
-    greenFactor,
-    baseShift,
-    volatile,
-  ];
 }
 
-class SourceGeoJson extends Source with EquatableMixin {
+class SourceGeoJson extends Source {
   const SourceGeoJson({
     required this.type,
     required this.data,
@@ -784,28 +718,9 @@ class SourceGeoJson extends Source with EquatableMixin {
       promoteId: promoteId ?? this.promoteId,
     );
   }
-
-  @override
-  List<Object?> get props => [
-    type,
-    data,
-    maxzoom,
-    attribution,
-    buffer,
-    filter,
-    tolerance,
-    cluster,
-    clusterRadius,
-    clusterMaxZoom,
-    clusterMinPoints,
-    clusterProperties,
-    lineMetrics,
-    generateId,
-    promoteId,
-  ];
 }
 
-class SourceVideo extends Source with EquatableMixin {
+class SourceVideo extends Source {
   const SourceVideo({
     required this.type,
     required this.urls,
@@ -852,16 +767,9 @@ class SourceVideo extends Source with EquatableMixin {
       coordinates: coordinates ?? this.coordinates,
     );
   }
-
-  @override
-  List<Object?> get props => [
-    type,
-    urls,
-    coordinates,
-  ];
 }
 
-class SourceImage extends Source with EquatableMixin {
+class SourceImage extends Source {
   const SourceImage({
     required this.type,
     required this.url,
@@ -908,16 +816,9 @@ class SourceImage extends Source with EquatableMixin {
       coordinates: coordinates ?? this.coordinates,
     );
   }
-
-  @override
-  List<Object?> get props => [
-    type,
-    url,
-    coordinates,
-  ];
 }
 
-class Layer with EquatableMixin {
+class Layer {
   const Layer({
     required this.id,
     required this.type,
@@ -1027,23 +928,9 @@ class Layer with EquatableMixin {
       paint: paint ?? this.paint,
     );
   }
-
-  @override
-  List<Object?> get props => [
-    id,
-    type,
-    metadata,
-    source,
-    sourceLayer,
-    minzoom,
-    maxzoom,
-    filter,
-    layout,
-    paint,
-  ];
 }
 
-class LayoutBackground extends Layout with EquatableMixin {
+class LayoutBackground extends Layout {
   const LayoutBackground({
     required this.visibility,
   });
@@ -1074,18 +961,13 @@ class LayoutBackground extends Layout with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [
-    visibility,
-  ];
-
-  @override
   Property getProperty(Symbol field) => switch(field) {
     #visibility => visibility as Property,
     _ => throw Exception('Unknown field: $field'),
   };
 }
 
-class LayoutFill extends Layout with EquatableMixin {
+class LayoutFill extends Layout {
   const LayoutFill({
     this.fillSortKey,
     required this.visibility,
@@ -1125,12 +1007,6 @@ class LayoutFill extends Layout with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [
-    fillSortKey,
-    visibility,
-  ];
-
-  @override
   Property getProperty(Symbol field) => switch(field) {
     #fillSortKey => fillSortKey as Property,
     #visibility => visibility as Property,
@@ -1138,7 +1014,7 @@ class LayoutFill extends Layout with EquatableMixin {
   };
 }
 
-class LayoutCircle extends Layout with EquatableMixin {
+class LayoutCircle extends Layout {
   const LayoutCircle({
     this.circleSortKey,
     required this.visibility,
@@ -1178,12 +1054,6 @@ class LayoutCircle extends Layout with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [
-    circleSortKey,
-    visibility,
-  ];
-
-  @override
   Property getProperty(Symbol field) => switch(field) {
     #circleSortKey => circleSortKey as Property,
     #visibility => visibility as Property,
@@ -1191,7 +1061,7 @@ class LayoutCircle extends Layout with EquatableMixin {
   };
 }
 
-class LayoutHeatmap extends Layout with EquatableMixin {
+class LayoutHeatmap extends Layout {
   const LayoutHeatmap({
     required this.visibility,
   });
@@ -1222,18 +1092,13 @@ class LayoutHeatmap extends Layout with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [
-    visibility,
-  ];
-
-  @override
   Property getProperty(Symbol field) => switch(field) {
     #visibility => visibility as Property,
     _ => throw Exception('Unknown field: $field'),
   };
 }
 
-class LayoutFillExtrusion extends Layout with EquatableMixin {
+class LayoutFillExtrusion extends Layout {
   const LayoutFillExtrusion({
     required this.visibility,
   });
@@ -1264,18 +1129,13 @@ class LayoutFillExtrusion extends Layout with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [
-    visibility,
-  ];
-
-  @override
   Property getProperty(Symbol field) => switch(field) {
     #visibility => visibility as Property,
     _ => throw Exception('Unknown field: $field'),
   };
 }
 
-class LayoutLine extends Layout with EquatableMixin {
+class LayoutLine extends Layout {
   const LayoutLine({
     required this.lineCap,
     required this.lineJoin,
@@ -1351,16 +1211,6 @@ class LayoutLine extends Layout with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [
-    lineCap,
-    lineJoin,
-    lineMiterLimit,
-    lineRoundLimit,
-    lineSortKey,
-    visibility,
-  ];
-
-  @override
   Property getProperty(Symbol field) => switch(field) {
     #lineCap => lineCap as Property,
     #lineJoin => lineJoin as Property,
@@ -1372,7 +1222,7 @@ class LayoutLine extends Layout with EquatableMixin {
   };
 }
 
-class LayoutSymbol extends Layout with EquatableMixin {
+class LayoutSymbol extends Layout {
   const LayoutSymbol({
     required this.symbolPlacement,
     required this.symbolSpacing,
@@ -1813,55 +1663,6 @@ class LayoutSymbol extends Layout with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [
-    symbolPlacement,
-    symbolSpacing,
-    symbolAvoidEdges,
-    symbolSortKey,
-    symbolZOrder,
-    iconAllowOverlap,
-    iconOverlap,
-    iconIgnorePlacement,
-    iconOptional,
-    iconRotationAlignment,
-    iconSize,
-    iconTextFit,
-    iconTextFitPadding,
-    iconImage,
-    iconRotate,
-    iconPadding,
-    iconKeepUpright,
-    iconOffset,
-    iconAnchor,
-    iconPitchAlignment,
-    textPitchAlignment,
-    textRotationAlignment,
-    textField,
-    textFont,
-    textSize,
-    textMaxWidth,
-    textLineHeight,
-    textLetterSpacing,
-    textJustify,
-    textRadialOffset,
-    textVariableAnchor,
-    textVariableAnchorOffset,
-    textAnchor,
-    textMaxAngle,
-    textWritingMode,
-    textRotate,
-    textPadding,
-    textKeepUpright,
-    textTransform,
-    textOffset,
-    textAllowOverlap,
-    textOverlap,
-    textIgnorePlacement,
-    textOptional,
-    visibility,
-  ];
-
-  @override
   Property getProperty(Symbol field) => switch(field) {
     #symbolPlacement => symbolPlacement as Property,
     #symbolSpacing => symbolSpacing as Property,
@@ -1912,7 +1713,7 @@ class LayoutSymbol extends Layout with EquatableMixin {
   };
 }
 
-class LayoutRaster extends Layout with EquatableMixin {
+class LayoutRaster extends Layout {
   const LayoutRaster({
     required this.visibility,
   });
@@ -1943,18 +1744,13 @@ class LayoutRaster extends Layout with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [
-    visibility,
-  ];
-
-  @override
   Property getProperty(Symbol field) => switch(field) {
     #visibility => visibility as Property,
     _ => throw Exception('Unknown field: $field'),
   };
 }
 
-class LayoutHillshade extends Layout with EquatableMixin {
+class LayoutHillshade extends Layout {
   const LayoutHillshade({
     required this.visibility,
   });
@@ -1985,18 +1781,13 @@ class LayoutHillshade extends Layout with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [
-    visibility,
-  ];
-
-  @override
   Property getProperty(Symbol field) => switch(field) {
     #visibility => visibility as Property,
     _ => throw Exception('Unknown field: $field'),
   };
 }
 
-class Light with EquatableMixin {
+class Light {
   const Light({
     required this.anchor,
     required this.position,
@@ -2052,17 +1843,9 @@ class Light with EquatableMixin {
       intensity: intensity ?? this.intensity,
     );
   }
-
-  @override
-  List<Object?> get props => [
-    anchor,
-    position,
-    color,
-    intensity,
-  ];
 }
 
-class Sky with EquatableMixin {
+class Sky {
   const Sky({
     required this.skyColor,
     required this.horizonColor,
@@ -2145,20 +1928,9 @@ class Sky with EquatableMixin {
       atmosphereBlend: atmosphereBlend ?? this.atmosphereBlend,
     );
   }
-
-  @override
-  List<Object?> get props => [
-    skyColor,
-    horizonColor,
-    fogColor,
-    fogGroundBlend,
-    horizonFogBlend,
-    skyHorizonBlend,
-    atmosphereBlend,
-  ];
 }
 
-class Terrain with EquatableMixin {
+class Terrain {
   const Terrain({
     required this.source,
     required this.exaggeration,
@@ -2196,15 +1968,9 @@ class Terrain with EquatableMixin {
       exaggeration: exaggeration ?? this.exaggeration,
     );
   }
-
-  @override
-  List<Object?> get props => [
-    source,
-    exaggeration,
-  ];
 }
 
-class Projection with EquatableMixin {
+class Projection {
   const Projection({
     required this.type,
   });
@@ -2233,14 +1999,9 @@ class Projection with EquatableMixin {
       type: type ?? this.type,
     );
   }
-
-  @override
-  List<Object?> get props => [
-    type,
-  ];
 }
 
-class PaintFill extends Paint with EquatableMixin {
+class PaintFill extends Paint {
   const PaintFill({
     required this.fillAntialias,
     required this.fillOpacity,
@@ -2325,17 +2086,6 @@ class PaintFill extends Paint with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [
-    fillAntialias,
-    fillOpacity,
-    fillColor,
-    fillOutlineColor,
-    fillTranslate,
-    fillTranslateAnchor,
-    fillPattern,
-  ];
-
-  @override
   Property getProperty(Symbol field) => switch(field) {
     #fillAntialias => fillAntialias as Property,
     #fillOpacity => fillOpacity as Property,
@@ -2348,7 +2098,7 @@ class PaintFill extends Paint with EquatableMixin {
   };
 }
 
-class PaintFillExtrusion extends Paint with EquatableMixin {
+class PaintFillExtrusion extends Paint {
   const PaintFillExtrusion({
     required this.fillExtrusionOpacity,
     required this.fillExtrusionColor,
@@ -2442,18 +2192,6 @@ class PaintFillExtrusion extends Paint with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [
-    fillExtrusionOpacity,
-    fillExtrusionColor,
-    fillExtrusionTranslate,
-    fillExtrusionTranslateAnchor,
-    fillExtrusionPattern,
-    fillExtrusionHeight,
-    fillExtrusionBase,
-    fillExtrusionVerticalGradient,
-  ];
-
-  @override
   Property getProperty(Symbol field) => switch(field) {
     #fillExtrusionOpacity => fillExtrusionOpacity as Property,
     #fillExtrusionColor => fillExtrusionColor as Property,
@@ -2467,7 +2205,7 @@ class PaintFillExtrusion extends Paint with EquatableMixin {
   };
 }
 
-class PaintLine extends Paint with EquatableMixin {
+class PaintLine extends Paint {
   const PaintLine({
     required this.lineOpacity,
     required this.lineColor,
@@ -2588,21 +2326,6 @@ class PaintLine extends Paint with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [
-    lineOpacity,
-    lineColor,
-    lineTranslate,
-    lineTranslateAnchor,
-    lineWidth,
-    lineGapWidth,
-    lineOffset,
-    lineBlur,
-    lineDasharray,
-    linePattern,
-    lineGradient,
-  ];
-
-  @override
   Property getProperty(Symbol field) => switch(field) {
     #lineOpacity => lineOpacity as Property,
     #lineColor => lineColor as Property,
@@ -2619,7 +2342,7 @@ class PaintLine extends Paint with EquatableMixin {
   };
 }
 
-class PaintCircle extends Paint with EquatableMixin {
+class PaintCircle extends Paint {
   const PaintCircle({
     required this.circleRadius,
     required this.circleColor,
@@ -2740,21 +2463,6 @@ class PaintCircle extends Paint with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [
-    circleRadius,
-    circleColor,
-    circleBlur,
-    circleOpacity,
-    circleTranslate,
-    circleTranslateAnchor,
-    circlePitchScale,
-    circlePitchAlignment,
-    circleStrokeWidth,
-    circleStrokeColor,
-    circleStrokeOpacity,
-  ];
-
-  @override
   Property getProperty(Symbol field) => switch(field) {
     #circleRadius => circleRadius as Property,
     #circleColor => circleColor as Property,
@@ -2771,7 +2479,7 @@ class PaintCircle extends Paint with EquatableMixin {
   };
 }
 
-class PaintHeatmap extends Paint with EquatableMixin {
+class PaintHeatmap extends Paint {
   const PaintHeatmap({
     required this.heatmapRadius,
     required this.heatmapWeight,
@@ -2838,15 +2546,6 @@ class PaintHeatmap extends Paint with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [
-    heatmapRadius,
-    heatmapWeight,
-    heatmapIntensity,
-    heatmapColor,
-    heatmapOpacity,
-  ];
-
-  @override
   Property getProperty(Symbol field) => switch(field) {
     #heatmapRadius => heatmapRadius as Property,
     #heatmapWeight => heatmapWeight as Property,
@@ -2857,7 +2556,7 @@ class PaintHeatmap extends Paint with EquatableMixin {
   };
 }
 
-class PaintSymbol extends Paint with EquatableMixin {
+class PaintSymbol extends Paint {
   const PaintSymbol({
     required this.iconOpacity,
     required this.iconColor,
@@ -3007,24 +2706,6 @@ class PaintSymbol extends Paint with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [
-    iconOpacity,
-    iconColor,
-    iconHaloColor,
-    iconHaloWidth,
-    iconHaloBlur,
-    iconTranslate,
-    iconTranslateAnchor,
-    textOpacity,
-    textColor,
-    textHaloColor,
-    textHaloWidth,
-    textHaloBlur,
-    textTranslate,
-    textTranslateAnchor,
-  ];
-
-  @override
   Property getProperty(Symbol field) => switch(field) {
     #iconOpacity => iconOpacity as Property,
     #iconColor => iconColor as Property,
@@ -3044,7 +2725,7 @@ class PaintSymbol extends Paint with EquatableMixin {
   };
 }
 
-class PaintRaster extends Paint with EquatableMixin {
+class PaintRaster extends Paint {
   const PaintRaster({
     required this.rasterOpacity,
     required this.rasterHueRotate,
@@ -3138,18 +2819,6 @@ class PaintRaster extends Paint with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [
-    rasterOpacity,
-    rasterHueRotate,
-    rasterBrightnessMin,
-    rasterBrightnessMax,
-    rasterSaturation,
-    rasterContrast,
-    rasterResampling,
-    rasterFadeDuration,
-  ];
-
-  @override
   Property getProperty(Symbol field) => switch(field) {
     #rasterOpacity => rasterOpacity as Property,
     #rasterHueRotate => rasterHueRotate as Property,
@@ -3163,7 +2832,7 @@ class PaintRaster extends Paint with EquatableMixin {
   };
 }
 
-class PaintHillshade extends Paint with EquatableMixin {
+class PaintHillshade extends Paint {
   const PaintHillshade({
     required this.hillshadeIlluminationDirection,
     required this.hillshadeIlluminationAnchor,
@@ -3239,16 +2908,6 @@ class PaintHillshade extends Paint with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [
-    hillshadeIlluminationDirection,
-    hillshadeIlluminationAnchor,
-    hillshadeExaggeration,
-    hillshadeShadowColor,
-    hillshadeHighlightColor,
-    hillshadeAccentColor,
-  ];
-
-  @override
   Property getProperty(Symbol field) => switch(field) {
     #hillshadeIlluminationDirection => hillshadeIlluminationDirection as Property,
     #hillshadeIlluminationAnchor => hillshadeIlluminationAnchor as Property,
@@ -3260,7 +2919,7 @@ class PaintHillshade extends Paint with EquatableMixin {
   };
 }
 
-class PaintBackground extends Paint with EquatableMixin {
+class PaintBackground extends Paint {
   const PaintBackground({
     required this.backgroundColor,
     this.backgroundPattern,
@@ -3309,13 +2968,6 @@ class PaintBackground extends Paint with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [
-    backgroundColor,
-    backgroundPattern,
-    backgroundOpacity,
-  ];
-
-  @override
   Property getProperty(Symbol field) => switch(field) {
     #backgroundColor => backgroundColor as Property,
     #backgroundPattern => backgroundPattern as Property,
@@ -3324,7 +2976,7 @@ class PaintBackground extends Paint with EquatableMixin {
   };
 }
 
-class Transition with EquatableMixin {
+class Transition {
   const Transition({
     required this.duration,
     required this.delay,
@@ -3362,12 +3014,6 @@ class Transition with EquatableMixin {
       delay: delay ?? this.delay,
     );
   }
-
-  @override
-  List<Object?> get props => [
-    duration,
-    delay,
-  ];
 }
 
 /// A helper sealed class to make matching on [Source] types easier

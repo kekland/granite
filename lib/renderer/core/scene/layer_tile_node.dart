@@ -8,6 +8,7 @@ import 'package:granite/renderer/core/gpu/uniform_utils.dart';
 import 'package:granite/renderer/renderer.dart';
 import 'package:granite/renderer/utils/byte_data_utils.dart';
 import 'package:granite/spec/spec.dart' as spec;
+import 'package:granite/vector_tile/layer.dart' as vt;
 import 'package:vector_math/vector_math_64.dart' as vm;
 
 vm.Matrix4 _getLayerTileTransform(TileCoordinates c, double zoom) {
@@ -27,10 +28,12 @@ abstract base class LayerTileNode<TSpec extends spec.Layer, TLayer extends Layer
   LayerTileNode({
     required this.coordinates,
     required this.geometryData,
+    this.vtLayer,
   }) : super();
 
   final TileCoordinates coordinates;
   final GeometryData? geometryData;
+  final vt.Layer? vtLayer;
   late final int stencilRef;
   late final LayerTileGeometry geometry;
   late final LayerTileMaterial material;
@@ -55,13 +58,19 @@ abstract base class LayerTileNode<TSpec extends spec.Layer, TLayer extends Layer
   void render(scene.SceneEncoder encoder, vm.Matrix4 parentWorldTransform) {
     getStencilRef();
     geometry.maybePrepare();
-    if (!visible || geometry.isEmpty) return;
+    if (!geometry.isReady || !visible || geometry.isEmpty) return;
 
     localTransform = _getLayerTileTransform(coordinates, renderer.baseEvaluationContext.zoom);
 
     final modelTransform = parentWorldTransform * localTransform;
     final cameraTransform = encoder.cameraTransform;
     final cameraPosition = encoder.camera.position;
+
+    // [0 - width; 0 - height] -> [-1.0 - 1.0; -1.0 - 1.0]
+    final screenDimensions = encoder.dimensions / 2.0;
+    final screenToClipTransform = vm.Matrix4.identity()
+      ..translateByDouble(-screenDimensions.width / 2.0, -screenDimensions.height / 2.0, 0.0, 1.0)
+      ..scaleByDouble(2.0 / screenDimensions.width, -2.0 / screenDimensions.height, 1.0, 1.0);
 
     // Compute light
     final light = renderer.style.light ?? spec.Light.withDefaults();
@@ -83,11 +92,17 @@ abstract base class LayerTileNode<TSpec extends spec.Layer, TLayer extends Layer
     final slot = fragmentShaderSlot.sizeInBytes != null ? fragmentShaderSlot : vertexShaderSlot;
 
     // mat4, mat4, mat4 vec3, vec3
-    final tileInfoData = ByteData(272 + 64);
+    final tileInfoData = ByteData(272 + 64 + 64 + 64);
     tileInfoData.setMat4(getUniformMemberOffset(slot, 'mvp')!, cameraTransform * modelTransform);
     tileInfoData.setMat4(getUniformMemberOffset(slot, 'camera_transform')!, cameraTransform);
     tileInfoData.setMat4(getUniformMemberOffset(slot, 'model_transform')!, modelTransform);
     tileInfoData.setVec3(getUniformMemberOffset(slot, 'camera_position')!, cameraPosition);
+    tileInfoData.setMat4(getUniformMemberOffset(slot, 'screen_to_clip_transform')!, screenToClipTransform);
+    tileInfoData.setMat4(
+      getUniformMemberOffset(slot, 'clip_to_screen_transform')!,
+      screenToClipTransform.clone()..invert(),
+    );
+
     tileInfoData.setVec3(getUniformMemberOffset(slot, 'light_direction')!, lightDirection);
     tileInfoData.setFloat(getUniformMemberOffset(slot, 'light_intensity')!, lightIntensity.toDouble());
     tileInfoData.setVec4(getUniformMemberOffset(slot, 'light_color')!, lightColor.vec);
@@ -100,7 +115,7 @@ abstract base class LayerTileNode<TSpec extends spec.Layer, TLayer extends Layer
     if (fragmentShaderSlot.sizeInBytes != null) encoder.renderPass.bindUniform(fragmentShaderSlot, view);
 
     if (isClipped && !renderer.isShadowPass) {
-    // if (false) {
+      // if (false) {
       encoder.renderPass.setStencilReference(stencilRef);
       encoder.renderPass.setStencilConfig(
         gpu.StencilConfig(

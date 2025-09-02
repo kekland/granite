@@ -1,7 +1,5 @@
-import 'package:equatable/equatable.dart';
-
 /// A class representing padding in the context of the style spec.
-class Padding with EquatableMixin {
+class Padding {
   const Padding({
     this.top = 0,
     this.right = 0,
@@ -10,11 +8,7 @@ class Padding with EquatableMixin {
   });
 
   /// Creates a padding with the same value on all sides.
-  const Padding.all(num value)
-      : top = value,
-        right = value,
-        bottom = value,
-        left = value;
+  const Padding.all(num value) : top = value, right = value, bottom = value, left = value;
 
   final num top;
   final num right;
@@ -22,11 +16,11 @@ class Padding with EquatableMixin {
   final num left;
 
   /// Creates a padding from a JSON array.
-  /// 
+  ///
   /// Depending on the length of the JSON array, the padding will be created as follows:
   /// - 1: All sides will have the same value.
   /// - 2: The first value will be used for the vertical sides and the second value for the horizontal sides.
-  /// - 3: The first value will be used for the top side, the second value for the horizontal sides, and the third value 
+  /// - 3: The first value will be used for the top side, the second value for the horizontal sides, and the third value
   ///   for the bottom side.
   /// - 4: The values will be used for the top, right, bottom, and left sides, respectively.
   factory Padding.fromJson(List<num> json) {
@@ -56,5 +50,11 @@ class Padding with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [top, right, bottom, left];
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Padding && other.top == top && other.right == right && other.bottom == bottom && other.left == left;
+  }
+
+  @override
+  int get hashCode => Object.hash(top, right, bottom, left);
 }

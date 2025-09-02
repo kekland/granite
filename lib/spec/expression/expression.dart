@@ -1,4 +1,3 @@
-import 'package:equatable/equatable.dart';
 import 'package:granite/spec/spec.dart';
 import '../utils/type_utils.dart';
 
@@ -10,7 +9,7 @@ import '../utils/type_utils.dart';
 ///
 /// The expressions themselves are generated automatically from their definitions in
 /// `lib/src/spec/expression/definitions`.
-abstract class Expression<T> with EquatableMixin {
+abstract class Expression<T> {
   const Expression({Type? type, Set<ExpressionDependency>? ownDependencies, Iterable<Expression>? childrenExpressions})
       : type = type ?? T,
         ownDependencies = ownDependencies ?? const {},
@@ -106,7 +105,4 @@ class _FormattedStringAdapterExpression extends Expression<Formatted> {
 
   @override
   Formatted evaluate(EvaluationContext context) => Formatted.fromJson(expression(context));
-
-  @override
-  List<Object?> get props => [expression];
 }

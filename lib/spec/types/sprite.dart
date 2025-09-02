@@ -1,9 +1,9 @@
-import 'package:equatable/equatable.dart';
+import 'package:collection/collection.dart';
 
 /// A class that represents a list of sprite sources in the style spec.
 ///
 /// These sprite sources are loaded from the network and used to render images in the map.
-class Sprite with EquatableMixin {
+class Sprite {
   const Sprite({required this.sources});
 
   final List<SpriteSource> sources;
@@ -22,11 +22,17 @@ class Sprite with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [sources];
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Sprite && const ListEquality().equals(other.sources, sources);
+  }
+
+  @override
+  int get hashCode => const ListEquality().hash(sources);
 }
 
 /// A class that represents a sprite source in the style spec.
-class SpriteSource with EquatableMixin {
+class SpriteSource {
   const SpriteSource({this.id, required this.url});
 
   factory SpriteSource.fromJson(Map<String, dynamic> json) {
@@ -67,7 +73,13 @@ class SpriteSource with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [id, url];
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SpriteSource && other.id == id && other.url == url;
+  }
+
+  @override
+  int get hashCode => Object.hash(id, url);
 }
 
 /// An enum that specifies how sprite should be resized to fit the text.
@@ -90,7 +102,7 @@ enum SpriteTextFit {
 /// A class that represents the sprite index that's fetched from the network.
 ///
 /// A sprite index is simply a mapping of sprite names to their respective data (see [SpriteData]).
-class SpriteIndex with EquatableMixin {
+class SpriteIndex {
   const SpriteIndex({required this.sprites});
 
   factory SpriteIndex.fromJson(Map<String, dynamic> json) {
@@ -102,11 +114,17 @@ class SpriteIndex with EquatableMixin {
   final Map<String, SpriteData> sprites;
 
   @override
-  List<Object?> get props => [sprites];
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SpriteIndex && const MapEquality().equals(other.sprites, sprites);
+  }
+
+  @override
+  int get hashCode => const MapEquality().hash(sprites);
 }
 
 /// A class that represents the data of a single sprite in the style spec.
-class SpriteData with EquatableMixin {
+class SpriteData {
   const SpriteData({
     required this.width,
     required this.height,
@@ -132,14 +150,12 @@ class SpriteData with EquatableMixin {
       stretchX: json['stretchX'] != null ? (json['stretchX'] as List).cast<int>() : null,
       stretchY: json['stretchY'] != null ? (json['stretchY'] as List).cast<int>() : null,
       sdf: json['sdf'] != null ? json['sdf'] as bool : false,
-      textFitWidth:
-          json['textFitWidth'] != null
-              ? SpriteTextFit.fromJson(json['textFitWidth'] as String)
-              : SpriteTextFit.stretchOrShrink,
-      textFitHeight:
-          json['textFitHeight'] != null
-              ? SpriteTextFit.fromJson(json['textFitHeight'] as String)
-              : SpriteTextFit.stretchOrShrink,
+      textFitWidth: json['textFitWidth'] != null
+          ? SpriteTextFit.fromJson(json['textFitWidth'] as String)
+          : SpriteTextFit.stretchOrShrink,
+      textFitHeight: json['textFitHeight'] != null
+          ? SpriteTextFit.fromJson(json['textFitHeight'] as String)
+          : SpriteTextFit.stretchOrShrink,
     );
   }
 
@@ -158,17 +174,36 @@ class SpriteData with EquatableMixin {
   final SpriteTextFit textFitHeight;
 
   @override
-  List<Object?> get props => [
-    width,
-    height,
-    x,
-    y,
-    pixelRatio,
-    content,
-    stretchX,
-    stretchY,
-    sdf,
-    textFitWidth,
-    textFitHeight,
-  ];
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SpriteData &&
+        other.width == width &&
+        other.height == height &&
+        other.x == x &&
+        other.y == y &&
+        other.pixelRatio == pixelRatio &&
+        const ListEquality<int>().equals(other.content, content) &&
+        const ListEquality<int>().equals(other.stretchX, stretchX) &&
+        const ListEquality<int>().equals(other.stretchY, stretchY) &&
+        other.sdf == sdf &&
+        other.textFitWidth == textFitWidth &&
+        other.textFitHeight == textFitHeight;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      width,
+      height,
+      x,
+      y,
+      pixelRatio,
+      const ListEquality<int>().hash(content),
+      const ListEquality<int>().hash(stretchX),
+      const ListEquality<int>().hash(stretchY),
+      sdf,
+      textFitWidth,
+      textFitHeight,
+    );
+  }
 }

@@ -4,7 +4,6 @@ import '../utils/type_utils.dart';
 import '../utils/vector_json_utils.dart';
 
 import 'package:granite/spec/spec.dart';
-import 'package:equatable/equatable.dart';
 import 'package:vector_math/vector_math_64.dart' as vm;
 
 T? _parseJsonForKnownTypes<T>(dynamic json) {
@@ -39,7 +38,7 @@ T? _parseJsonForKnownTypes<T>(dynamic json) {
   }
 }
 
-abstract class Property<T> with EquatableMixin {
+abstract class Property<T> {
   Property({required this.isExpression, this.value, this.expression, this.defaultValue});
 
   Property.value(this.value, {this.defaultValue}) : expression = null, isExpression = false;
@@ -67,12 +66,6 @@ abstract class Property<T> with EquatableMixin {
   }
 
   Set<ExpressionDependency> get dependencies => expression?.dependencies ?? const {};
-
-  @override
-  List<Object?> get props => [value, expression, defaultValue];
-
-  @override
-  bool get stringify => true;
 }
 
 class ConstantProperty<T> extends Property<T> {

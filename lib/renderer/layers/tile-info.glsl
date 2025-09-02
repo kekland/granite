@@ -3,6 +3,8 @@ layout (std140) uniform TileInfo {
   mat4 mvp;
   mat4 camera_transform;
   mat4 model_transform;
+  mat4 screen_to_clip_transform;
+  mat4 clip_to_screen_transform;
   vec3 camera_position;
 
   // light
