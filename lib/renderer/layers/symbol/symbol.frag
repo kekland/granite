@@ -16,7 +16,6 @@ in highp vec2 v_uv;
 out highp vec4 f_color;
 
 const float inner_edge = 0.75;
-const float smoothing = 1.0 / 16.0;
 
 void main() {
   #pragma prop: resolve
@@ -25,6 +24,8 @@ void main() {
   float halo_edge = inner_edge - scaled_halo_width;
 
   float dist = texture(u_glyph_atlas_texture, v_uv).r;
+  float smoothing = fwidth(dist) * 0.75;
+
   float text_alpha = smoothstep(inner_edge - smoothing, inner_edge + smoothing, dist);
   float halo_alpha = smoothstep(halo_edge - smoothing, halo_edge + smoothing, dist);
 

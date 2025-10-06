@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_gpu/gpu.dart' as gpu;
 import 'package:flutter_scene/scene.dart' as scene;
-import 'package:granite/renderer/layers/symbol/engine/symbol_layout_engine.dart';
+import 'package:granite/renderer/layers/symbol/layout/symbol_layout_engine.dart';
 import 'package:granite/renderer/renderer.dart';
 import 'package:granite/renderer/utils/byte_data_utils.dart';
 import 'package:granite/renderer/utils/filter_features.dart';
