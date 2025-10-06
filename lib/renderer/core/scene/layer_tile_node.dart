@@ -57,7 +57,11 @@ abstract base class LayerTileNode<TSpec extends spec.Layer, TLayer extends Layer
   @override
   void render(scene.SceneEncoder encoder, vm.Matrix4 parentWorldTransform) {
     getStencilRef();
-    geometry.maybePrepare();
+    final prepare = geometry.maybePrepare();
+    if (prepare is Future) {
+      prepare.then((_) => renderer.notifyListeners());
+    }
+
     if (!geometry.isReady || !visible || geometry.isEmpty) return;
 
     localTransform = _getLayerTileTransform(coordinates, renderer.baseEvaluationContext.zoom);

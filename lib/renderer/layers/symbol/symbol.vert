@@ -12,7 +12,7 @@ in highp vec2 uv;
 #pragma prop: declare(highp vec4 text_color)
 #pragma prop: declare(float text_opacity)
 #pragma prop: declare(highp vec4 text_halo_color)
-#pragma prop: edclaret(float text_halo_width)
+#pragma prop: declare(float text_halo_width)
 
 out highp vec2 v_uv;
 

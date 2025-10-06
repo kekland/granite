@@ -140,12 +140,21 @@ SymbolPlacement _layoutSinglePlacement(
   final keepUpright = layout.textKeepUpright.evaluate(evalContext);
   final offset = layout.textOffset.evaluate(evalContext);
 
+  final _multiline = multiline && _hasBreakablePoints(text);
+
   final builder = ui.ParagraphBuilder(
     ui.ParagraphStyle(
       fontFamily: 'Noto Sans',
       fontSize: size.toDouble(),
       height: lineHeightEm.toDouble(),
-      textAlign: ui.TextAlign.left,
+      textAlign: _multiline
+          ? switch (justify) {
+              spec.LayoutSymbol$TextJustify.left => ui.TextAlign.left,
+              spec.LayoutSymbol$TextJustify.center => ui.TextAlign.center,
+              spec.LayoutSymbol$TextJustify.right => ui.TextAlign.right,
+              _ => ui.TextAlign.start,
+            }
+          : ui.TextAlign.left,
     ),
   );
 
@@ -154,12 +163,10 @@ SymbolPlacement _layoutSinglePlacement(
     builder.addText(section.text!);
   }
 
-  final _multiline = multiline && _hasBreakablePoints(text);
-
   final paragraph = builder.build();
   paragraph.layout(ui.ParagraphConstraints(width: _multiline ? maxWidthEm.toDouble() * size : double.infinity));
   final glyphPlacements = <GlyphPlacement>[];
-  final paragraphWidth = paragraph.minIntrinsicWidth;
+  final paragraphWidth = _multiline ? paragraph.width : paragraph.minIntrinsicWidth;
 
   final anchorOffset = switch (anchor) {
     spec.LayoutSymbol$TextAnchor.topLeft => vm.Vector2(0, 0),
@@ -178,10 +185,12 @@ SymbolPlacement _layoutSinglePlacement(
     final glyphInfo = paragraph.getGlyphInfoAt(i);
     if (glyphInfo == null) break;
     i = glyphInfo.graphemeClusterCodeUnitRange.end;
+    final codeUnitRange = glyphInfo.graphemeClusterCodeUnitRange;
 
-    for (var j = glyphInfo.graphemeClusterCodeUnitRange.start; j < glyphInfo.graphemeClusterCodeUnitRange.end; j++) {
+    for (var j = codeUnitRange.start; j < codeUnitRange.end; j++) {
       final glyph = loadedGlyphs[j];
       if (glyph == null) continue;
+      final layoutBounds = glyphInfo.graphemeClusterLayoutBounds;
 
       glyphPlacements.add(
         GlyphPlacement(
@@ -189,8 +198,8 @@ SymbolPlacement _layoutSinglePlacement(
           position:
               anchorOffset +
               vm.Vector2(
-                glyphInfo.graphemeClusterLayoutBounds.left + (glyph.raw.left - kSdfPadding) * (size / 24.0),
-                glyphInfo.graphemeClusterLayoutBounds.top + (-glyph.raw.top - kSdfPadding) * (size / 24.0),
+                layoutBounds.left + (glyph.raw.left - kSdfPadding) * (size / 24.0),
+                layoutBounds.top + (-glyph.raw.top - kSdfPadding) * (size / 24.0),
               ),
           width: (glyph.raw.width.toDouble() + kSdfPadding * 2) * (size / 24.0),
           height: (glyph.raw.height.toDouble() + kSdfPadding * 2) * (size / 24.0),

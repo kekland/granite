@@ -15,7 +15,7 @@
     "pubspec.lock": true,
     "**/.dart_tool": true,
     ".fvmrc": true,
-    ".flutter-plugins-dependencies": true,
+    ".flutter-plugins-dependencies": true
   },
   "material-icon-theme.folders.associations": {
     "tilejson": "dump",
@@ -25,9 +25,9 @@
     "references": "json",
     "preprocessor": "scripts",
     "layers": "queue",
-    "analysis": "test",
+    "analysis": "test"
   },
   "editor.rulers": [
     120
-  ],
+  ]
 }
