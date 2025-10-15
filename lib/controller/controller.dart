@@ -55,7 +55,7 @@ class MapController extends ChangeNotifier {
     if (_pixelRatio != value) {
       _pixelRatio = value;
       _onCameraChanged();
-      notifyListeners();
+      // notifyListeners();
     }
   }
 
