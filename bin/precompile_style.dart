@@ -19,10 +19,10 @@ Future<void> main(List<String> args) async {
   //   'example/assets/maptiler-streets.shaderbundle',
   // ];
 
-  final args = [
-    'fixtures/maptiler-streets-v2.json',
-    'example/assets/maptiler-streets.shaderbundle',
-  ];
+  // final args = [
+  //   'fixtures/maptiler-streets-v2.json',
+  //   'example/assets/maptiler-streets.shaderbundle',
+  // ];
 
   // final args = [
   //   'fixtures/maptiler-streets-v2-dark.json',
@@ -39,7 +39,7 @@ Future<void> main(List<String> args) async {
   await precompileStyle(
     style: style,
     outputFile: outFile,
-    addHotReloadSuffix: true,
+    addHotReloadSuffix: args.contains('--hot-reload'),
   );
 
   print('Done in ${timer.elapsedMilliseconds}ms');

@@ -11,8 +11,8 @@ abstract base class LayerNode<TSpec extends spec.Layer> extends scene.Node with 
   final TSpec specLayer;
   final PreprocessedLayer preprocessedLayer;
 
-  String get vertexShaderName => '${specLayer.id}-vert';
-  String get fragmentShaderName => '${specLayer.id}-frag';
+  String get vertexShaderName => '${renderer.style.name}/${specLayer.id}-vert';
+  String get fragmentShaderName => '${renderer.style.name}/${specLayer.id}-frag';
 
   late final vertexShader = renderer.getShader(vertexShaderName)!;
   late final fragmentShader = renderer.getShader(fragmentShaderName)!;

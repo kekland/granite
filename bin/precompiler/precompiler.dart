@@ -42,6 +42,7 @@ Future<void> precompileStyle({
         (v) => _compileLayer(
           tempDir: tempDir,
           layer: v,
+          styleName: style.name!,
           hotReloadSuffix: hotReloadSuffix,
         ),
       )
@@ -62,6 +63,7 @@ Future<void> precompileStyle({
 Future<ipsb.ShaderBundle> _compileLayer({
   required Directory tempDir,
   required PreprocessedLayer layer,
+  required String styleName,
   String? hotReloadSuffix,
 }) async {
   final shaderBundleJson = {};
@@ -74,8 +76,8 @@ Future<ipsb.ShaderBundle> _compileLayer({
   final fragFile = await File('$shaderFileName.frag').writeAsString(layer.fragmentShaderCode);
 
   // Write them to the shader bundle JSON
-  shaderBundleJson['${layer.id}-vert$suffix'] = {'type': 'vertex', 'file': vertFile.path};
-  shaderBundleJson['${layer.id}-frag$suffix'] = {'type': 'fragment', 'file': fragFile.path};
+  shaderBundleJson['$styleName/${layer.id}-vert$suffix'] = {'type': 'vertex', 'file': vertFile.path};
+  shaderBundleJson['$styleName/${layer.id}-frag$suffix'] = {'type': 'fragment', 'file': fragFile.path};
 
   // Run impellerc
   final slOutFile = File('${tempDir.path}/${layer.id}.shaderbundle');
